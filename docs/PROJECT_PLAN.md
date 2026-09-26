@@ -78,23 +78,23 @@ Período planejado: 25/09 a 26/09.
 
 ### TSK-1.1 — Ambiente Python
 
-- [ ] Verificar a versão do Python instalada.
-- [ ] Confirmar compatibilidade com as dependências pretendidas.
-- [ ] Registrar a versão adotada.
+- [x] Verificar a versão do Python instalada.
+- [x] Confirmar compatibilidade com as dependências pretendidas.
+- [x] Registrar a versão adotada.
 
 ### TSK-1.2 — Ambiente virtual
 
-- [ ] Entender a finalidade de um ambiente virtual.
-- [ ] Criar .venv.
-- [ ] Ativar o ambiente virtual.
-- [ ] Confirmar que python e pip apontam para .venv.
-- [ ] Validar que .venv permanece ignorado pelo Git.
+- [x] Entender a finalidade de um ambiente virtual.
+- [x] Criar .venv.
+- [x] Ativar o ambiente virtual.
+- [x] Confirmar que python e pip apontam para .venv.
+- [x] Validar que .venv permanece ignorado pelo Git.
 
 ### TSK-1.3 — Estratégia de dependências
 
-- [ ] Discutir requirements.txt versus pyproject.toml.
-- [ ] Escolher conscientemente uma abordagem.
-- [ ] Registrar a decisão em DECISIONS.md.
+- [x] Discutir requirements.txt versus pyproject.toml.
+- [x] Escolher conscientemente uma abordagem.
+- [x] Registrar a decisão em DECISIONS.md.
 
 ### TSK-1.4 — Dependências iniciais
 

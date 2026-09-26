@@ -133,6 +133,42 @@ Os conceitos de ORM, sessão, transação e migrations deverão ser compreendido
 
 ---
 
+## DEC-005 — Gerenciamento de dependências
+
+Status: ACCEPTED
+
+### Contexto
+
+Precisamos definir como as dependências Python serão declaradas e reproduzidas em outras máquinas.
+
+### Opções consideradas
+
+1. requirements.txt
+2. pyproject.toml
+
+### Decisão
+
+Utilizar requirements.txt como mecanismo principal de declaração das dependências Python do StockFlow API.
+
+### Justificativa
+
+- simplicidade;
+- adequação ao tamanho e objetivo da aplicação;
+- facilidade de compreensão;
+- reprodução do ambiente através de pip;
+- ausência de necessidade atual de empacotamento Python;
+- evitar configuração adicional sem benefício concreto para os requisitos do desafio.
+
+### Consequências
+
+- as dependências diretas do projeto serão registradas em requirements.txt;
+- a instalação poderá ser reproduzida com `pip install -r requirements.txt`;
+- deverá existir cuidado para manter o arquivo sincronizado com as dependências realmente utilizadas;
+- dependências diretas e transitivas devem ser distinguidas conceitualmente;
+- pyproject.toml poderá ser reconsiderado no futuro somente se surgir uma necessidade concreta.
+
+---
+
 # Decisões pendentes
 
 As decisões abaixo não devem ser tomadas silenciosamente durante implementação.
@@ -141,13 +177,15 @@ As decisões abaixo não devem ser tomadas silenciosamente durante implementaç�
 
 ## PEND-001 — Gerenciamento de dependências
 
-Status: PROPOSED
+Status: SUPERSEDED por DEC-005
 
-Questão:
+Questão original:
 
 Utilizar requirements.txt ou pyproject.toml?
 
-A decisão será tomada na Fase 1 antes de registrar as primeiras dependências.
+A decisão seria tomada na Fase 1 antes de registrar as primeiras dependências.
+
+Resolução: ver DEC-005.
 
 ---
 
