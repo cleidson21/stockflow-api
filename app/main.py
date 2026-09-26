@@ -10,3 +10,12 @@ app = FastAPI(
 @app.get("/")
 def root():
     return {"project": "StockFlow API", "status": "running"}
+
+
+@app.get(
+    "/health",
+    summary="Health check",
+    description="Confirma que a aplicação está em execução e consegue responder a requisições HTTP.",
+)
+def health():
+    return {"status": "ok"}
