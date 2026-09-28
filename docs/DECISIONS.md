@@ -702,6 +702,104 @@ Como a Movimentação é um registro de auditoria crítico para o sistema, gerar
 - Os payloads de requisição para criação de movimentação (input) rejeitarão ou ignorarão informações de data.
 - A própria camada de aplicação ou banco de dados injetará o valor atual.
 
+## DEC-018 — Exclusão de Categoria (RESTRICT)
+
+Status: ACCEPTED
+
+### Contexto
+
+O desafio explicita que "não deve ser possível excluir uma categoria que tenha produtos associados". Era preciso formalizar essa regra de domínio (DOM-013) e decidir como lidar com as opções de bloqueio, soft delete ou exclusão em cascata.
+
+### Opções consideradas
+
+1. **RESTRICT (Bloqueio duro):** Impede a exclusão da Categoria se houver Produto associado.
+2. **SET NULL / CASCADE:** (Inválido para o escopo).
+3. **Soft delete:** Marcador lógico.
+
+### Decisão
+
+A exclusão da Categoria deve respeitar as seguintes regras:
+- Categoria sem Produtos associados pode ser excluída.
+- Categoria com um ou mais Produtos associados **NÃO** pode ser excluída.
+- Os Produtos NÃO são excluídos em cascata.
+- Os Produtos NÃO ficam sem Categoria.
+- Soft delete não será adotado no escopo atual.
+
+*(Nota: Detalhes de implementação como ON DELETE SQL, tratamento do erro e status HTTP não serão definidos agora).*
+
+### Justificativa
+
+Cada Produto possui obrigatoriamente uma Categoria. A exclusão da Categoria não deve alterar ou destruir Produtos implicitamente. A política RESTRICT atua como uma REGRA DE DOMÍNIO preservando a integridade.
+
+### Consequências
+
+- Operações de exclusão de Categoria poderão falhar se o recurso estiver em uso.
+
+---
+
+## DEC-019 — Exclusão de Produto (RESTRICT)
+
+Status: ACCEPTED
+
+### Contexto
+
+Quando um Produto é excluído, era necessário determinar o impacto nas Movimentações históricas a ele associadas (DOM-007).
+
+### Opções consideradas
+
+1. **CASCADE / SET NULL:** Destruir histórico ou quebrar a referência ao Produto.
+2. **RESTRICT:** Impedir a exclusão do Produto se ele possuir movimentações.
+
+### Decisão
+
+A exclusão do Produto deve respeitar as seguintes regras:
+- Produto sem Movimentações pode ser excluído.
+- Produto que possui uma ou mais Movimentações **NÃO** pode ser excluído.
+- Movimentações NÃO são excluídas em cascata.
+- O `produto_id` histórico NÃO será colocado como NULL.
+- Soft delete não será adotado no escopo atual.
+
+### Justificativa
+
+Movimentações são registros imutáveis de auditoria e precisam manter uma referência válida ao Produto histórico. Destruir ou invalidar essa ligação violaria os requisitos do domínio.
+
+### Consequências
+
+- A exclusão de um produto será bloqueada assim que a primeira movimentação for vinculada a ele.
+
+---
+
+## DEC-020 — Exclusão de Fornecedor (RESTRICT)
+
+Status: ACCEPTED
+
+### Contexto
+
+Ao tentar excluir um Fornecedor, era preciso analisar o impacto sobre os Produtos cadastrados e as Movimentações históricas associadas (DOM-008).
+
+### Opções consideradas
+
+1. **CASCADE / SET NULL:** Apagar o histórico e desvincular do cadastro dos produtos.
+2. **RESTRICT:** Bloquear exclusão se existirem associações.
+
+### Decisão
+
+O Fornecedor pode ser excluído **somente quando**:
+- Não possuir Produtos associados.
+- Não possuir Movimentações históricas associadas.
+
+Se qualquer uma dessas referências existir, a exclusão deve ser bloqueada. Não utilizar CASCADE, SET NULL ou soft delete no escopo atual.
+
+### Justificativa
+
+O Fornecedor participa tanto do cadastro atual dos Produtos quanto da referência histórica das Movimentações. Bloquear a exclusão garante que o banco mantenha consistência sem destruir informações críticas, seguindo a semântica de RESTRICT como regra de domínio.
+
+### Consequências
+
+- Será impossível excluir fornecedores com qualquer histórico ativo.
+
+---
+
 ## PEND-005 — SQLAlchemy síncrono ou assíncrono
 
 Status: PROPOSED
@@ -716,13 +814,15 @@ A escolha deve considerar simplicidade, objetivo educacional e necessidades reai
 
 ## PEND-006 — Regras de exclusão
 
-Status: PROPOSED
+Status: SUPERSEDED por DEC-018, DEC-019 e DEC-020
 
 Questão:
 
 Além da restrição explícita envolvendo categorias com produtos associados, quais comportamentos serão adotados na exclusão de fornecedores e produtos relacionados a registros históricos?
 
 A decisão deverá preservar integridade referencial e auditoria.
+
+Resolução: A política conceitual escolhida é RESTRICT para todas as entidades centrais, conforme definido em DEC-018, DEC-019 e DEC-020.
 
 ---
 

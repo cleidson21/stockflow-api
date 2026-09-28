@@ -315,15 +315,7 @@ A necessidade de um valor de referência foi confirmada estruturalmente. A solu�
 
 ### 5.3 Regras propostas / decisões ainda abertas
 
-As proposições abaixo emergem da análise do domínio como prováveis, mas **ainda não são requisitos aprovados do enunciado nem decisões formalmente aceitas**. Cada uma corresponde a uma entrada na Matriz DOM e deve ser resolvida explicitamente com o desenvolvedor.
-
-| # | Regra proposta | DOM relacionado |
-|---|---|---|
-| RP-07 | Exclusão de produto com movimentações deve ser impedida (RESTRICT) | DOM-007 |
-| RP-08 | Exclusão de fornecedor com produtos associados deve ser impedida (RESTRICT) | DOM-008 |
-| RP-09 | Exclusão de categoria com produtos deve ser impedida (RESTRICT) | DOM-013 |
-
-> ⚠️ Nenhuma das regras acima deve ser implementada antes de sua decisão DOM correspondente ser formalmente aprovada.
+*Todas as regras propostas (RPs) emergentes da análise do domínio foram formalmente resolvidas e promovidas a regras aprovadas (RAs).*
 
 ---
 
@@ -343,6 +335,9 @@ As regras abaixo foram formalmente decididas e aprovadas:
 | RA-08 | Saída acima do saldo disponível no Produto é inválida; estoque negativo não é permitido | DEC-015 |
 | RA-09 | O `tipo` de Movimentação é um conjunto fechado de 2 valores (ENTRADA e SAÍDA) | DEC-016 |
 | RA-10 | A `data` da Movimentação é gerada pelo servidor no momento da criação | DEC-017 |
+| RA-11 | Categoria não pode ser excluída se possuir produtos associados (RESTRICT) | DEC-018 |
+| RA-12 | Produto não pode ser excluído se possuir movimentações (RESTRICT) | DEC-019 |
+| RA-13 | Fornecedor não pode ser excluído se possuir produtos ou movimentações (RESTRICT) | DEC-020 |
 
 ---
 
@@ -358,13 +353,13 @@ As questões abaixo permanecem abertas até aprovação explícita. Nenhuma deve
 | DOM-004 | Como representar estoque mínimo por produto? Nome, tipo, valor padrão, validações | RE-10 (consulta estoque mínimo) | Campo `estoque_minimo` em Produto; global fixo; parâmetro na query | Impossibilidade da consulta sem valor de referência | — | **CLOSED / ACCEPTED (DEC-011)** |
 | DOM-005 | `quantidade_em_estoque` pode ser alterada diretamente no CRUD de Produto após criação? | RE-07 (movimentação atualiza estoque); auditoria | (A) Livre no CRUD; (B) Somente via movimentações; (C) Ajuste de inventário como tipo especial | Integridade e rastreabilidade do histórico | — | **CLOSED / ACCEPTED (DEC-012)** |
 | DOM-006 | Como representar o estoque inicial de um produto recém-cadastrado? | RE-01 (campo `quantidade_em_estoque`) | (1) Campo direto na criação sem movimentação; (2) Sempre zero + movimentação manual; (3) Campo gera movimentação automática | Auditoria; UX da API; consistência | DOM-005 | **CLOSED / ACCEPTED (DEC-013)** |
-| DOM-007 | O que acontece ao excluir um Produto que possui movimentações? | RE-05/RE-06 (imutabilidade); auditoria | RESTRICT; CASCADE (destrói histórico); SET NULL; soft delete | Preservação do histórico de auditoria | — | **OPEN** |
-| DOM-008 | O que acontece ao excluir um Fornecedor relacionado a produtos ou movimentações? | RE-12 (filtro por fornecedor); integridade | RESTRICT; SET NULL; soft delete | Rastreabilidade histórica; integridade do filtro por fornecedor | DOM-003 | **OPEN** |
+| DOM-007 | O que acontece ao excluir um Produto que possui movimentações? | RE-05/RE-06 (imutabilidade); auditoria | RESTRICT; CASCADE (destrói histórico); SET NULL; soft delete | Preservação do histórico de auditoria | — | **CLOSED / ACCEPTED (DEC-019)** |
+| DOM-008 | O que acontece ao excluir um Fornecedor relacionado a produtos ou movimentações? | RE-12 (filtro por fornecedor); integridade | RESTRICT; SET NULL; soft delete | Rastreabilidade histórica; integridade do filtro por fornecedor | DOM-003 | **CLOSED / ACCEPTED (DEC-020)** |
 | DOM-009 | Como representar o tipo entrada/saída na Movimentação? | RE-04 (campo `tipo`) | Enum de banco; VARCHAR com CHECK; booleano | Clareza semântica; portabilidade entre SGBDs | — | **CLOSED / ACCEPTED (DEC-016)** |
 | DOM-010 | A `data` da movimentação é gerada pelo servidor ou informada pelo cliente? | RE-04 (campo `data`) | Servidor (timestamp do momento da criação); cliente (informado no corpo da requisição) | Confiabilidade da auditoria; possibilidade de registros retroativos | — | **CLOSED / ACCEPTED (DEC-017)** |
 | DOM-011 | Quantidade de movimentação aceita zero? Aceita negativo? | RE-07 (movimentação altera estoque) | Somente > 0; aceitar zero; aceitar negativo | Integridade dos registros de auditoria; significado semântico | — | **CLOSED / ACCEPTED (DEC-014)** |
 | DOM-012 | Saída de estoque pode ultrapassar a quantidade disponível? | RE-07; integridade do estoque | Bloquear com erro; permitir (estoque negativo); permitir com alerta | Possibilidade de estoque negativo | DOM-011 | **CLOSED / ACCEPTED (DEC-015)** |
-| DOM-013 | O que acontece ao excluir uma Categoria que possui produtos associados? | RE-09 (comportamento explicitamente mencionado) | RESTRICT; SET NULL (produto sem categoria); CASCADE (deleta produtos); soft delete da categoria | Integridade dos produtos; produtos órfãos de categoria | DOM-001 | **OPEN** |
+| DOM-013 | O que acontece ao excluir uma Categoria que possui produtos associados? | RE-09 (comportamento explicitamente mencionado) | RESTRICT; SET NULL (produto sem categoria); CASCADE (deleta produtos); soft delete da categoria | Integridade dos produtos; produtos órfãos de categoria | DOM-001 | **CLOSED / ACCEPTED (DEC-018)** |
 
 ---
 
@@ -384,9 +379,9 @@ A ordem abaixo respeita as dependências entre as decisões. Decisões anteriore
 | **Resolvido** | **DOM-010** | **Define o campo `data` no modelo de movimentação** |
 | **Resolvido** | **DOM-011** | **Define validação de quantidade na movimentação** |
 | **Resolvido** | **DOM-012** | **Define regra de negócio para saídas; depende de DOM-011** |
-| 11 | DOM-013 | Define comportamento de exclusão de Categoria; depende de DOM-001 |
-| 12 | DOM-007 | Define comportamento de exclusão de Produto; depende do CRUD estar estruturado |
-| 13 | DOM-008 | Define comportamento de exclusão de Fornecedor; depende de DOM-003 |
+| **Resolvido** | **DOM-013** | **Define comportamento de exclusão de Categoria; depende de DOM-001** |
+| **Resolvido** | **DOM-007** | **Define comportamento de exclusão de Produto; depende do CRUD estar estruturado** |
+| **Resolvido** | **DOM-008** | **Define comportamento de exclusão de Fornecedor; depende de DOM-003** |
 
 > A ordem pode ser ajustada se novas dependências forem identificadas durante a implementação. Qualquer ajuste deve ser justificado.
 
@@ -394,7 +389,7 @@ A ordem abaixo respeita as dependências entre as decisões. Decisões anteriore
 
 ## 8. MER — Modelo Conceitual
 
-**Status: PARCIALMENTE APROVADO — relacionamentos centrais definidos; demais regras DOM ainda em resolução.**
+**Status: decisões de domínio concluídas — aguardando revisão final/consolidação.**
 
 ### Entidades obrigatórias identificadas
 
@@ -606,7 +601,8 @@ O atributo `tipo` representa um conceito semântico do domínio de negócios (En
 **Por que a data da movimentação não pode ser informada pelo cliente na requisição?**
 Movimentações são registros de auditoria do sistema, devendo refletir a realidade do momento em que ocorreram no banco de dados. Permitir que o cliente envie a data abre margem para lançamentos retroativos, fraudes ou inconsistências de fuso horário/relógios locais, além de fugir do escopo essencial do desafio (DEC-017).
 
-> Respostas adicionais sobre políticas de exclusão e outras regras de negócio serão acrescentadas conforme as decisões DOM restantes forem resolvidas.
+**Por que a exclusão (de Produto, Categoria ou Fornecedor) usa uma abordagem RESTRICT em vez de CASCADE ou SET NULL?**
+Porque a consistência histórica do estoque e a auditoria de movimentações são prioridades absolutas do domínio. Um `CASCADE` destruiria dados críticos de histórico (ex: apagar uma categoria apagaria produtos, que apagaria o histórico de movimentações). Um `SET NULL` deixaria movimentações ou produtos "órfãos", violando as restrições obrigatórias (ex: todo produto deve ter uma categoria). A regra RESTRICT atua como salvaguarda, garantindo que entidades em uso nunca sejam corrompidas ou apagadas acidentalmente (DEC-018, DEC-019, DEC-020).
 
 ---
 
@@ -621,7 +617,8 @@ Movimentações são registros de auditoria do sistema, devendo refletir a reali
 | v0.5 | TSK-2.3 — Resolução de DOM-005 e DOM-006 (quantidade em estoque e saldo inicial) | CONCLUÍDO |
 | v0.6 | TSK-2.3 — Resolução de DOM-011 e DOM-012 (quantidade e saída de estoque) | CONCLUÍDO |
 | v0.7 | TSK-2.3 — Resolução de DOM-009 e DOM-010 (tipo e data da movimentação) | CONCLUÍDO |
-| v0.8 | MER aprovado com cardinalidades definidas | PENDENTE |
-| v0.9 | DER em Mermaid versionado | PENDENTE |
-| v0.10 | Modelo relacional mapeado | PENDENTE |
-| v0.11 | Modelo físico PostgreSQL definido (TSK-2.4) | PENDENTE |
+| v0.8 | TSK-2.3 — Resolução de DOM-007, DOM-008 e DOM-013 (regras de exclusão) | CONCLUÍDO |
+| v0.9 | MER aprovado com cardinalidades definidas | PENDENTE |
+| v0.10 | DER em Mermaid versionado | PENDENTE |
+| v0.11 | Modelo relacional mapeado | PENDENTE |
+| v0.12 | Modelo físico PostgreSQL definido (TSK-2.4) | PENDENTE |
