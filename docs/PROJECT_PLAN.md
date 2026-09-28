@@ -171,10 +171,10 @@ Período planejado: 27/09 a 29/09.
 
 ### TSK-2.4 — Tipos de dados
 
-- [ ] Definir tipos de identificadores.
-- [ ] Definir estratégia para valores monetários.
-- [ ] Definir tipos para quantidades.
-- [ ] Definir campos de data/hora.
+- [x] Definir tipos de identificadores.
+- [x] Definir estratégia para valores monetários.
+- [x] Definir tipos para quantidades.
+- [x] Definir campos de data/hora.
 - [ ] Definir constraints de unicidade.
 - [ ] Avaliar índices necessários.
 
