@@ -63,10 +63,10 @@ Meta: preparar um repositório limpo, rastreável e adequado ao desenvolvimento 
 
 ### TSK-0.12 — Planejamento interno
 
-- [~] Criar docs/PROJECT_PLAN.md.
-- [~] Criar docs/DECISIONS.md.
-- [ ] Revisar os dois documentos.
-- [ ] Realizar commit da documentação.
+- [x] Criar docs/PROJECT_PLAN.md.
+- [x] Criar docs/DECISIONS.md.
+- [x] Revisar os dois documentos.
+- [x] Realizar commit da documentação.
 
 ---
 
@@ -98,41 +98,41 @@ Período planejado: 25/09 a 26/09.
 
 ### TSK-1.4 — Dependências iniciais
 
-- [ ] Instalar FastAPI.
-- [ ] Instalar servidor ASGI apropriado.
-- [ ] Registrar versões das dependências.
-- [ ] Entender a função de cada dependência instalada.
+- [x] Instalar FastAPI.
+- [x] Instalar servidor ASGI apropriado.
+- [x] Registrar versões das dependências.
+- [x] Entender a função de cada dependência instalada.
 
 ### TSK-1.5 — Aplicação mínima
 
-- [ ] Definir a estrutura mínima da aplicação.
-- [ ] Criar o ponto de entrada FastAPI.
-- [ ] Criar uma primeira rota simples.
-- [ ] Executar a aplicação localmente.
+- [x] Definir a estrutura mínima da aplicação.
+- [x] Criar o ponto de entrada FastAPI.
+- [x] Criar uma primeira rota simples.
+- [x] Executar a aplicação localmente.
 
 ### TSK-1.6 — HTTP e FastAPI
 
-- [ ] Entender request e response.
-- [ ] Entender endpoint e rota.
-- [ ] Entender método HTTP.
-- [ ] Entender status code.
-- [ ] Entender ASGI.
-- [ ] Entender a função do servidor de aplicação.
+- [x] Entender request e response.
+- [x] Entender endpoint e rota.
+- [x] Entender método HTTP.
+- [x] Entender status code.
+- [x] Entender ASGI.
+- [x] Entender a função do servidor de aplicação.
 
 ### TSK-1.7 — Documentação automática
 
-- [ ] Acessar /docs.
-- [ ] Entender Swagger UI.
-- [ ] Entender OpenAPI.
-- [ ] Verificar a documentação automática da primeira rota.
+- [x] Acessar /docs.
+- [x] Entender Swagger UI.
+- [x] Entender OpenAPI.
+- [x] Verificar a documentação automática da primeira rota.
 
 ### TSK-1.8 — Health Check
 
-- [ ] Criar endpoint de health check.
-- [ ] Definir resposta esperada.
-- [ ] Validar manualmente.
-- [ ] Revisar alterações.
-- [ ] Realizar Conventional Commit.
+- [x] Criar endpoint de health check.
+- [x] Definir resposta esperada.
+- [x] Validar manualmente.
+- [x] Revisar alterações.
+- [x] Realizar Conventional Commit.
 
 ---
 

@@ -169,6 +169,91 @@ Utilizar requirements.txt como mecanismo principal de declaração das dependên
 
 ---
 
+## DEC-006 — Versão base do Python
+
+Status: ACCEPTED
+
+### Contexto
+
+O ambiente inicial Linux disponibilizava Python 3.12.3.
+Uma segunda máquina Windows disponibilizava inicialmente Python 3.14, e Python 3.12.10 foi posteriormente instalado para manter a mesma série minor entre os ambientes.
+
+### Opções consideradas
+
+1. utilizar a versão Python disponível em cada máquina;
+2. padronizar o projeto na série Python 3.12.
+
+### Decisão
+
+O StockFlow API adotará Python 3.12 como versão base.
+
+Patches diferentes dentro da série 3.12 podem ser utilizados entre ambientes quando compatíveis com as dependências do projeto.
+
+### Justificativa
+
+- a série 3.12 já foi validada no ambiente inicial;
+- reduz divergência entre máquinas;
+- evita trocar de runtime sem necessidade;
+- mantém o requisito suficientemente específico sem exigir um patch exato.
+
+### Consequências
+
+- novos ambientes devem preferencialmente possuir Python 3.12;
+- o `.venv` deve ser recriado em cada máquina;
+- ambientes virtuais não são compartilhados ou versionados;
+- alterações futuras da versão minor do Python devem ser decisões explícitas.
+
+---
+
+## DEC-007 — Estrutura inicial da aplicação
+
+Status: ACCEPTED
+
+### Contexto
+
+Era necessário definir uma estrutura mínima para iniciar FastAPI sem introduzir camadas arquiteturais prematuras.
+
+### Opções consideradas
+
+1. manter main.py diretamente na raiz;
+2. utilizar um pacote `app` com `app/main.py`;
+3. criar desde o início uma estrutura completa com routers, services, repositories, models e schemas.
+
+### Decisão
+
+A aplicação inicia com:
+
+```
+app/
+├── __init__.py
+└── main.py
+```
+
+`app/main.py` contém inicialmente:
+
+- a instância FastAPI;
+- GET /;
+- GET /health.
+
+Novas estruturas serão introduzidas somente quando as responsabilidades reais surgirem.
+
+### Justificativa
+
+- separa código da aplicação dos arquivos de configuração da raiz;
+- cria um namespace Python claro;
+- permite iniciar via `app.main:app`;
+- evita arquitetura excessiva antes da existência do domínio e do banco;
+- mantém a aplicação fácil de compreender na defesa técnica.
+
+### Consequências
+
+- `app` é o pacote principal da aplicação;
+- `app.main` é atualmente o módulo de entrada;
+- routers, models, schemas, services e demais módulos só serão adicionados mediante necessidade concreta;
+- a estrutura poderá evoluir conforme a modelagem da Fase 2.
+
+---
+
 # Decisões pendentes
 
 As decisões abaixo não devem ser tomadas silenciosamente durante implementação.
@@ -191,13 +276,15 @@ Resolução: ver DEC-005.
 
 ## PEND-002 — Estrutura inicial da aplicação
 
-Status: PROPOSED
+Status: SUPERSEDED por DEC-007
 
-Questão:
+Questão original:
 
 Qual estrutura de módulos oferece clareza suficiente para o tamanho deste desafio sem introduzir arquitetura excessiva?
 
-A decisão será tomada antes da criação do primeiro código FastAPI.
+A decisão seria tomada antes da criação do primeiro código FastAPI.
+
+Resolução: ver DEC-007.
 
 ---
 
