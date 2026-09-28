@@ -555,6 +555,79 @@ No momento da criação de um novo Produto, era necessário determinar como o es
 
 ---
 
+## DEC-014 — Quantidade da Movimentação
+
+Status: ACCEPTED
+
+### Contexto
+
+Para garantir a consistência das movimentações e do saldo, era necessário definir quais valores são válidos para a quantidade de uma Movimentação (se aceitaria zero, valores negativos ou apenas estritamente positivos).
+
+### Opções consideradas
+
+1. **Valores negativos para saída:** Representar saídas com quantidade negativa e entradas com positiva.
+2. **Quantidade apenas como magnitude:** A quantidade é estritamente maior que zero (magnitude) e o `tipo` da movimentação define a direção.
+
+### Decisão
+
+A quantidade de uma Movimentação deve ser **estritamente maior que zero**.
+
+- Zero é inválido.
+- Valor negativo é inválido.
+- O campo `tipo` já determina a direção da operação (entrada aumenta estoque; saída diminui estoque).
+- A quantidade representa somente a magnitude da movimentação.
+
+*(Nota: Não definir ainda o tipo físico PostgreSQL, CHECK constraint física ou status HTTP para erro de validação).*
+
+### Justificativa
+
+Utilizar a quantidade como magnitude absoluta combinada ao campo `tipo` explícito torna a intenção da operação mais clara, evita confusões semânticas (como "saída de -10") e facilita a manutenção dos registros de auditoria.
+
+### Consequências
+
+- A validação de criação da Movimentação exigirá quantidade > 0.
+- A lógica de atualização de saldo deverá somar para entrada e subtrair a magnitude para saída.
+
+---
+
+## DEC-015 — Saída acima do estoque disponível
+
+Status: ACCEPTED
+
+### Contexto
+
+O desafio não especifica explicitamente o comportamento quando uma Movimentação de saída tenta retirar mais itens do que o saldo atual do Produto. É necessário decidir como o domínio lida com estoque insuficiente.
+
+### Opções consideradas
+
+1. **Permitir estoque negativo:** Efetuar a saída e deixar o saldo negativo (útil se houvesse suporte a backorders/reservas).
+2. **Bloquear saída:** A operação é cancelada se não houver saldo suficiente.
+
+### Decisão
+
+Uma Movimentação do tipo saída somente pode ser criada quando:
+`quantidade <= quantidade_em_estoque atual do Produto`
+
+**Regras aprovadas:**
+- Saída igual ao saldo disponível é válida e pode levar o estoque a zero.
+- Saída maior que o saldo disponível é inválida.
+- Estoque negativo não é permitido pelo domínio.
+- Se a saída for inválida:
+  - a Movimentação NÃO deve ser criada;
+  - o saldo do Produto NÃO deve ser alterado.
+- A criação da Movimentação e a alteração do saldo deverão futuramente ocorrer atomicamente (não implementar essa atomicidade agora).
+
+### Justificativa
+
+No escopo atual, saldos negativos não fazem sentido sem fluxos avançados de vendas/reservas. A rejeição atua como salvaguarda da integridade do estoque físico e dos registros do sistema.
+
+### Consequências
+
+- Será necessária uma validação contra o saldo atual persistido do Produto antes de aprovar uma saída.
+- **Risco de Concorrência Registrado:** Duas saídas concorrentes podem tentar consumir o mesmo saldo. A regra de domínio deverá ser preservada também sob concorrência. A estratégia para lidar com isso (locking, isolamento, retry) será decidida na etapa própria já prevista no projeto, não devendo ser antecipada.
+
+---
+
 ## PEND-005 — SQLAlchemy síncrono ou assíncrono
 
 Status: PROPOSED
