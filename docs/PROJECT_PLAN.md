@@ -175,7 +175,7 @@ Período planejado: 27/09 a 29/09.
 - [x] Definir estratégia para valores monetários.
 - [x] Definir tipos para quantidades.
 - [x] Definir campos de data/hora.
-- [ ] Definir constraints de unicidade.
+- [x] Definir constraints de unicidade.
 - [ ] Avaliar índices necessários.
 
 ### TSK-2.5 — PostgreSQL
