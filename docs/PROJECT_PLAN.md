@@ -142,14 +142,16 @@ Meta: definir conscientemente o modelo relacional e conectar a aplicação ao Po
 
 Período planejado: 27/09 a 29/09.
 
+> `docs/DOMAIN_MODELING.md` é o documento vivo da modelagem de domínio e dados desta fase.
+
 ### TSK-2.1 — Análise de domínio
 
-- [ ] Revisar Produto.
-- [ ] Revisar Fornecedor.
-- [ ] Revisar Categoria.
-- [ ] Revisar Movimentação de Estoque.
-- [ ] Identificar regras obrigatórias.
-- [ ] Identificar ambiguidades do enunciado.
+- [x] Revisar Produto.
+- [x] Revisar Fornecedor.
+- [x] Revisar Categoria.
+- [x] Revisar Movimentação de Estoque.
+- [x] Identificar regras obrigatórias.
+- [x] Identificar ambiguidades do enunciado.
 
 ### TSK-2.2 — Relacionamentos
 
