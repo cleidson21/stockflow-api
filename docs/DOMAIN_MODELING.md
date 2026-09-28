@@ -160,6 +160,12 @@ Produto é a entidade central do sistema. Representa um item físico gerenciado 
 | `quantidade_em_estoque` | — |
 | `data_cadastro` | — |
 
+**Atributos adicionais aprovados:**
+
+| Atributo | Constraint / Regra |
+|---|---|
+| `estoque_minimo` | Obrigatório, numérico inteiro, aceita zero, não aceita negativo (DEC-011) |
+
 **Relacionamentos:**
 
 - Categoria 1:N — cada Produto pertence a uma Categoria
@@ -173,7 +179,6 @@ Produto é a entidade central do sistema. Representa um item físico gerenciado 
 
 **Decisões abertas:**
 
-- DOM-004: campo de estoque mínimo (nome, tipo, default, validações)
 - DOM-005: `quantidade_em_estoque` alterável diretamente ou somente via movimentações
 - DOM-006: representação do estoque inicial
 - DOM-007: política de exclusão de produto com movimentações
@@ -306,7 +311,7 @@ Estas conclusões não foram declaradas explicitamente no enunciado, mas são **
 
 **Sobre IE-02 (estoque mínimo):**
 
-A necessidade de um valor de referência é uma inferência estrutural. A solução mais provável é um campo `estoque_minimo` diretamente em Produto. No entanto, nome, tipo de dado, valor padrão, possibilidade de zero e validações ainda não foram decididos. Os detalhes permanecem abertos em **DOM-004**.
+A necessidade de um valor de referência foi confirmada estruturalmente. A solução aprovada é a criação do campo `estoque_minimo` diretamente na entidade Produto (ver DEC-011 e RA-04).
 
 ---
 
@@ -339,6 +344,7 @@ As regras abaixo foram formalmente decididas e aprovadas:
 | RA-01 | Um produto pertence a uma única categoria (cardinalidade 1:N) | DEC-008 |
 | RA-02 | Um produto possui um único fornecedor cadastral (cardinalidade 1:N) | DEC-009 |
 | RA-03 | Movimentação armazena referência direta e histórica ao fornecedor associado ao Produto no momento da criação | DEC-010 |
+| RA-04 | Produto possui o atributo `estoque_minimo` (obrigatório, numérico inteiro, sem default, >= 0) | DEC-011 |
 
 ---
 
@@ -351,7 +357,7 @@ As questões abaixo permanecem abertas até aprovação explícita. Nenhuma deve
 | DOM-001 | Cardinalidade Categoria–Produto: um produto pertence a uma ou múltiplas categorias? | RE-09 (exclusão de categoria com produtos) | 1:N — FK em Produto; N:N — tabela associativa | Estrutura do banco; política de exclusão; complexidade do CRUD | — | **CLOSED / ACCEPTED (DEC-008)** |
 | DOM-002 | Cardinalidade Fornecedor–Produto: um produto tem um ou múltiplos fornecedores? | RE-12 (filtro por fornecedor) | 1:N — FK em Produto; N:N — tabela associativa | Estrutura do banco; rastreabilidade histórica; complexidade do filtro | — | **CLOSED / ACCEPTED (DEC-009)** |
 | DOM-003 | Como a Movimentação referencia o Fornecedor para permitir filtro? | RE-12 (filtro de movimentações por fornecedor) | (a) Join via Produto; (b) `supplier_id` opcional direto na movimentação | Rastreabilidade histórica se fornecedor do produto mudar; complexidade de JOIN | DOM-002 | **CLOSED / ACCEPTED (DEC-010)** |
-| DOM-004 | Como representar estoque mínimo por produto? Nome, tipo, valor padrão, validações | RE-10 (consulta estoque mínimo) | Campo `estoque_minimo` em Produto; global fixo; parâmetro na query | Impossibilidade da consulta sem valor de referência | — | **OPEN** |
+| DOM-004 | Como representar estoque mínimo por produto? Nome, tipo, valor padrão, validações | RE-10 (consulta estoque mínimo) | Campo `estoque_minimo` em Produto; global fixo; parâmetro na query | Impossibilidade da consulta sem valor de referência | — | **CLOSED / ACCEPTED (DEC-011)** |
 | DOM-005 | `quantidade_em_estoque` pode ser alterada diretamente no CRUD de Produto após criação? | RE-07 (movimentação atualiza estoque); auditoria | (A) Livre no CRUD; (B) Somente via movimentações; (C) Ajuste de inventário como tipo especial | Integridade e rastreabilidade do histórico | — | **OPEN** |
 | DOM-006 | Como representar o estoque inicial de um produto recém-cadastrado? | RE-01 (campo `quantidade_em_estoque`) | (1) Campo direto na criação sem movimentação; (2) Sempre zero + movimentação manual; (3) Campo gera movimentação automática | Auditoria; UX da API; consistência | DOM-005 | **OPEN** |
 | DOM-007 | O que acontece ao excluir um Produto que possui movimentações? | RE-05/RE-06 (imutabilidade); auditoria | RESTRICT; CASCADE (destrói histórico); SET NULL; soft delete | Preservação do histórico de auditoria | — | **OPEN** |
@@ -373,7 +379,7 @@ A ordem abaixo respeita as dependências entre as decisões. Decisões anteriore
 | **Resolvido** | **DOM-001** | **Define se haverá FK simples ou tabela associativa entre Produto e Categoria** |
 | **Resolvido** | **DOM-002** | **Define se haverá FK simples ou tabela associativa entre Produto e Fornecedor** |
 | **Resolvido** | **DOM-003** | **Depende de DOM-002; define o modelo de rastreabilidade do fornecedor na movimentação** |
-| 4 | DOM-004 | Define campo adicional em Produto; necessário para a consulta de estoque mínimo |
+| **Resolvido** | **DOM-004** | **Define campo adicional em Produto; necessário para a consulta de estoque mínimo** |
 | 5 | DOM-005 | Define regra central de negócio para o CRUD de Produto |
 | 6 | DOM-006 | Depende de DOM-005; define o comportamento da criação do produto com estoque |
 | 7 | DOM-009 | Define o campo `tipo` no modelo de movimentação |
@@ -426,6 +432,10 @@ erDiagram
     FORNECEDOR ||--o{ PRODUTO : fornece
     PRODUTO ||--o{ MOVIMENTACAO_ESTOQUE : possui
     FORNECEDOR ||--o{ MOVIMENTACAO_ESTOQUE : referencia_historica
+
+    PRODUTO {
+        int estoque_minimo
+    }
 ```
 
 **Nota sobre a notação:**
@@ -591,7 +601,7 @@ Não significa que o fornecedor "causou" ou participou da saída, mas sim que el
 | v0.1 | TSK-2.1 — Levantamento inicial de domínio e ambiguidades (13 questões DOM identificadas) | CONCLUÍDO |
 | v0.2 | TSK-2.1B — Documentação formal da análise em DOMAIN_MODELING.md | CONCLUÍDO |
 | v0.3 | TSK-2.2 — Resolução de DOM-001 a DOM-003 (relacionamentos centrais, MER parcial, primeiro DER parcial) | CONCLUÍDO |
-| v0.4 | TSK-2.3 — Resolução de DOM-004 (estoque mínimo) e demais DOM | PENDENTE |
+| v0.4 | TSK-2.3 — Resolução de DOM-004 (estoque mínimo) | CONCLUÍDO |
 | v0.5 | MER aprovado com cardinalidades definidas | PENDENTE |
 | v0.6 | DER em Mermaid versionado | PENDENTE |
 | v0.7 | Modelo relacional mapeado | PENDENTE |

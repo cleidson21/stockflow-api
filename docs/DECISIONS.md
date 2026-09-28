@@ -425,11 +425,52 @@ Resolução: ver DEC-009.
 
 ---
 
+## DEC-011 — Estoque mínimo
+
+Status: ACCEPTED
+
+### Contexto
+
+O desafio exige a consulta de produtos no estoque mínimo ou abaixo dele. Para que essa consulta seja possível, é necessária uma referência para comparação.
+
+### Opções consideradas
+
+1. **Atributo no Produto:** Um campo `estoque_minimo` em Produto.
+2. **Valor global fixo:** Um valor padrão para todos os produtos (ex: 10 unidades).
+3. **Parâmetro de query:** Informado no momento da requisição pela API.
+
+### Decisão
+
+O Produto terá o atributo conceitual: `estoque_minimo`.
+
+**Semântica:** `quantidade_em_estoque <= estoque_minimo` significa que o Produto está no estoque mínimo ou abaixo dele.
+
+**Regras aprovadas:**
+- Pertence ao Produto.
+- Representa quantidade de unidades (tipo conceitual inteiro).
+- É obrigatório e deve aceitar zero.
+- Não deve aceitar valor negativo.
+- Não terá um default implícito nesta etapa.
+- Deverá ser informado conscientemente no cadastro do Produto.
+
+### Justificativa
+
+- A consulta exigida precisa de um valor de referência por Produto, pois produtos diferentes podem possuir necessidades diferentes.
+- Um valor global ou parâmetro de consulta não representa corretamente essa característica específica do Produto.
+
+### Consequências
+
+- `estoque_minimo` será um campo obrigatório (NOT NULL) no cadastro de produto.
+- Precisará de validação de valor >= 0.
+- A modelagem do modelo físico PostgreSQL deverá prever o tipo numérico correspondente a essa regra, porém os tipos físicos serão definidos posteriormente.
+
+---
+
 ## PEND-004 — Estoque mínimo
 
-Status: PROPOSED
+Status: SUPERSEDED por DEC-011
 
-Questão:
+Questão original:
 
 O requisito de consulta de produtos no estoque mínimo exige uma referência persistida de estoque mínimo por produto.
 
@@ -439,6 +480,8 @@ Devem ser definidos:
 - tipo;
 - valor padrão;
 - regras de validação.
+
+Resolução: ver DEC-011.
 
 ---
 
