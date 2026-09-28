@@ -155,19 +155,19 @@ Período planejado: 27/09 a 29/09.
 
 ### TSK-2.2 — Relacionamentos
 
-- [ ] Decidir a relação Produto–Categoria.
-- [ ] Decidir a relação Produto–Fornecedor.
-- [ ] Decidir como Movimentação referencia Produto.
-- [ ] Avaliar necessidade de referência indireta ou direta ao Fornecedor.
-- [ ] Definir regras de integridade referencial.
-- [ ] Registrar decisões.
+- [x] Decidir a relação Produto–Categoria.
+- [x] Decidir a relação Produto–Fornecedor.
+- [x] Decidir como Movimentação referencia Produto.
+- [x] Avaliar necessidade de referência indireta ou direta ao Fornecedor.
+- [x] Definir regras de integridade referencial.
+- [x] Registrar decisões.
 
 ### TSK-2.3 — Estoque mínimo
 
-- [ ] Analisar a exigência de consulta por estoque mínimo.
-- [ ] Decidir como representar estoque mínimo em Produto.
-- [ ] Definir nome, tipo e comportamento do campo.
-- [ ] Registrar justificativa.
+- [x] Analisar a exigência de consulta por estoque mínimo.
+- [x] Decidir como representar estoque mínimo em Produto.
+- [x] Definir nome, tipo e comportamento do campo.
+- [x] Registrar justificativa.
 
 ### TSK-2.4 — Tipos de dados
 

@@ -389,33 +389,69 @@ A ordem abaixo respeita as dependências entre as decisões. Decisões anteriore
 
 ## 8. MER — Modelo Conceitual
 
-**Status: decisões de domínio concluídas — aguardando revisão final/consolidação.**
+**Status: APROVADO NO NÍVEL CONCEITUAL**
 
-### Entidades obrigatórias identificadas
+O MER deve representar somente o domínio aprovado.
 
-As quatro entidades abaixo são confirmadas como presentes no domínio:
+### Entidades e Atributos
 
-- **Produto**
-- **Fornecedor**
-- **Categoria**
-- **Movimentação de Estoque**
+**CATEGORIA**
+- id
+- nome
+
+**FORNECEDOR**
+- id
+- nome
+- cnpj
+- telefone
+- email
+
+**PRODUTO**
+- id
+- nome
+- sku
+- preco_custo
+- preco_venda
+- quantidade_em_estoque
+- estoque_minimo
+- data_cadastro
+
+**MOVIMENTACAO_ESTOQUE**
+- id
+- tipo
+- quantidade
+- data
 
 ### Relacionamentos identificados
 
-| Relacionamento | Cardinalidade | Status |
-|---|---|---|
-| Categoria ↔ Produto | 1:N | DEC-008 (Resolvido) |
-| Fornecedor ↔ Produto | 1:N | DEC-009 (Resolvido) |
-| Produto ↔ Movimentação | 1:N (Produto tem muitas Movimentações) | Inferência confirmada (IE-01) |
-| Fornecedor ↔ Movimentação | 1:N | DEC-010 (Fornecedor histórico associado ao Produto no momento da movimentação) |
+| Relacionamento | Lado A | Lado B | Justificativa |
+|---|---|---|---|
+| Categoria ↔ Produto | CATEGORIA (0,N) | (1,1) PRODUTO | Categoria pode existir antes de possuir Produtos (min 0). Produto não existe no modelo aprovado sem Categoria (min 1, max 1). |
+| Fornecedor ↔ Produto | FORNECEDOR (0,N) | (1,1) PRODUTO | Fornecedor pode existir antes de possuir Produtos (min 0). Produto não existe no modelo aprovado sem Fornecedor (min 1, max 1). |
+| Produto ↔ Movimentação | PRODUTO (0,N) | (1,1) MOVIMENTACAO_ESTOQUE | Produto nasce sem necessidade de possuir Movimentação (min 0). Movimentação não existe sem Produto (min 1, max 1). |
+| Fornecedor ↔ Movimentação | FORNECEDOR (0,N) | (1,1) MOVIMENTACAO_ESTOQUE | Fornecedor pode existir sem aparecer ainda no histórico (min 0). Movimentação não existe sem Fornecedor histórico (min 1, max 1). |
 
-O MER completo será produzido após a resolução das demais questões DOM abertas.
+### Principais regras conceituais aprovadas
+
+- Produto nasce com quantidade_em_estoque = 0;
+- quantidade_em_estoque só é alterada por Movimentações;
+- estoque_minimo é obrigatório;
+- estoque_minimo aceita zero;
+- estoque_minimo não aceita negativo;
+- tipo possui somente ENTRADA ou SAÍDA;
+- quantidade da Movimentação deve ser > 0;
+- SAÍDA não pode superar o saldo disponível;
+- data/hora da Movimentação é determinada pelo servidor;
+- Movimentações são imutáveis;
+- Produto com histórico não pode ser excluído;
+- Categoria referenciada por Produtos não pode ser excluída;
+- Fornecedor referenciado por Produto ou Movimentação não pode ser excluído.
 
 ---
 
 ## 9. DER — Diagrama Entidade-Relacionamento
 
-**Status: PARCIAL — aguardando decisões DOM restantes**
+**Status: CONSOLIDADO**
 
 O DER será representado em sintaxe Mermaid (`erDiagram`) e versionado nesta seção.
 
@@ -426,59 +462,137 @@ erDiagram
     PRODUTO ||--o{ MOVIMENTACAO_ESTOQUE : possui
     FORNECEDOR ||--o{ MOVIMENTACAO_ESTOQUE : referencia_historica
 
+    CATEGORIA {
+        identifier id
+        text nome
+    }
+
+    FORNECEDOR {
+        identifier id
+        text nome
+        text cnpj
+        text telefone
+        text email
+    }
+
     PRODUTO {
-        int estoque_minimo
+        identifier id
+        text nome
+        text sku
+        money preco_custo
+        money preco_venda
+        integer quantidade_em_estoque
+        integer estoque_minimo
+        datetime data_cadastro
+    }
+
+    MOVIMENTACAO_ESTOQUE {
+        identifier id
+        movement_type tipo
+        integer quantidade
+        datetime data
     }
 ```
 
-**Nota sobre a notação:**
-- `||` no lado de Categoria/Fornecedor/Produto representa uma entidade obrigatória para a instância relacionada (ou seja, todo Produto tem uma Categoria obrigatória).
-- `o{` indica zero ou muitas ocorrências do lado plural.
-- O diagrama ainda é parcial; atributos e constraints restantes serão completados após DOM-004 em diante.
+**Legenda da notação Crow's Foot e cardinalidades (min, max):**
+- `||` representa **exatamente um** `(1,1)`.
+- `o{` representa **zero ou muitos** `(0,N)`.
+- A cardinalidade `(1,N)` (um ou muitos) **não existe** nestes relacionamentos porque o sistema não exige que entidades de cadastro (Categoria, Fornecedor ou Produto) já nasçam com registros dependentes associados.
+- Se Mermaid exige tipos antes dos atributos, usamos aqui nomes conceituais (como `identifier`, `text`, `money`, `datetime`, `movement_type`) para não misturar com o modelo físico.
 
 ---
 
 ## 10. Mapeamento E-R → Modelo Relacional
 
-**Status: PARCIALMENTE APROVADO — aguardando demais decisões DOM**
+**Status: CONSOLIDADO**
 
-Esta seção descreverá, para cada entidade e relacionamento aprovado no MER, a tabela relacional resultante.
+### Ausência de tabelas associativas
 
-**Consequências já garantidas pelas decisões:**
+Nenhum relacionamento aprovado é N:N. Por isso o modelo atual NÃO precisa de tabelas associativas para Categoria–Produto ou Fornecedor–Produto. A decisão de utilizar 1:N foi deliberada e documentada. Não se deve criar tabelas como `produto_categoria`, `produto_fornecedor` ou qualquer outra tabela associativa.
 
-- O relacionamento Categoria 1:N Produto será mapeado futuramente por FK no lado Produto;
-- O relacionamento Fornecedor 1:N Produto será mapeado futuramente por FK no lado Produto;
-- O relacionamento Produto 1:N Movimentação implica FK de Produto em Movimentação;
-- O relacionamento Fornecedor 1:N Movimentação implica FK de Fornecedor em Movimentação.
+### Mapeamento dos relacionamentos (Migração de Chaves)
 
-Ainda **não** estão definidos:
+1. **CATEGORIA 1:N PRODUTO**
+   A PK de Categoria migra para o lado N: `PRODUTO.categoria_id → CATEGORIA.id`. Como Produto participa com (1,1), `categoria_id` será logicamente obrigatório.
+2. **FORNECEDOR 1:N PRODUTO**
+   A PK de Fornecedor migra para o lado N: `PRODUTO.fornecedor_id → FORNECEDOR.id`. Esse campo representa o fornecedor cadastral atual do Produto.
+3. **PRODUTO 1:N MOVIMENTACAO_ESTOQUE**
+   A PK de Produto migra para o lado N: `MOVIMENTACAO_ESTOQUE.produto_id → PRODUTO.id`. Toda Movimentação pertence a exatamente um Produto.
+4. **FORNECEDOR 1:N MOVIMENTACAO_ESTOQUE**
+   A PK de Fornecedor migra para o lado N: `MOVIMENTACAO_ESTOQUE.fornecedor_id → FORNECEDOR.id`. Esse campo possui semântica histórica:
+   - `Produto.fornecedor_id` = fornecedor cadastral atual;
+   - `Movimentacao.fornecedor_id` = fornecedor associado ao Produto no momento da Movimentação.
+   Não se deve eliminar nenhuma das duas FKs como "duplicação".
 
-- Nomes físicos finais;
-- Tipos SQL;
-- Regras de exclusão (ON DELETE);
-- Nullability física além da semântica conceitual já decidida;
-- Índices;
-- Constraints restantes.
+### Modelo Lógico Esperado
 
-Esta seção será preenchida completamente após DOM-004 e as demais estarem resolvidas.
+CATEGORIA
+---------
+id PK
+nome UNIQUE NOT NULL
+
+FORNECEDOR
+----------
+id PK
+nome NOT NULL
+cnpj UNIQUE NOT NULL
+telefone NOT NULL
+email UNIQUE NOT NULL
+
+PRODUTO
+-------
+id PK
+nome NOT NULL
+sku UNIQUE NOT NULL
+preco_custo NOT NULL
+preco_venda NOT NULL
+quantidade_em_estoque NOT NULL
+estoque_minimo NOT NULL
+data_cadastro NOT NULL
+categoria_id FK → CATEGORIA.id NOT NULL
+fornecedor_id FK → FORNECEDOR.id NOT NULL
+
+MOVIMENTACAO_ESTOQUE
+--------------------
+id PK
+tipo NOT NULL
+quantidade NOT NULL
+data NOT NULL
+produto_id FK → PRODUTO.id NOT NULL
+fornecedor_id FK → FORNECEDOR.id NOT NULL
+
+### Regras Lógicas Adicionais do Modelo
+
+- **CATEGORIA**: nome único.
+- **FORNECEDOR**: cnpj único; email único.
+- **PRODUTO**: sku único; `estoque_minimo >= 0`; `quantidade_em_estoque` inicia conceitualmente em zero; saldo não é alterado pelo CRUD comum.
+- **MOVIMENTACAO_ESTOQUE**: `tipo ∈ {ENTRADA, SAÍDA}`; `quantidade > 0`; imutável após criação; SAÍDA não pode produzir estoque negativo.
+
+*(Nota: As constraints lógicas acima não representam ainda comandos SQL diretos)*
+
+### Matriz de Rastreabilidade
+
+| Elemento do MER | Cardinalidade (min,max) | Implementação Relacional | Decisão relacionada | Motivo |
+|---|---|---|---|---|
+| Categoria ↔ Produto | (0,N) ↔ (1,1) | `PRODUTO.categoria_id` FK | DEC-008 | FK no lado N. |
+| Fornecedor ↔ Produto | (0,N) ↔ (1,1) | `PRODUTO.fornecedor_id` FK | DEC-009 | FK no lado N. |
+| Produto ↔ Movimentação | (0,N) ↔ (1,1) | `MOVIMENTACAO_ESTOQUE.produto_id` FK | Inferência estrutural / decisões de domínio | FK no lado N. |
+| Fornecedor ↔ Movimentação | (0,N) ↔ (1,1) | `MOVIMENTACAO_ESTOQUE.fornecedor_id` FK | DEC-010 | Preservação histórica. |
 
 ---
 
-## 11. Modelo Físico PostgreSQL
+## 11. Distinção entre os Níveis de Modelagem
 
-**Status: AGUARDANDO MODELO RELACIONAL**
+- **MER:** visão conceitual do domínio.
+- **DER:** representação visual do MER.
+- **Modelo Relacional:** relações, atributos, PK, FK e constraints lógicas.
+- **Modelo Físico PostgreSQL:** implementação concreta ainda PENDENTE.
 
-Somente após o modelo relacional ser aprovado, serão definidos os detalhes físicos de cada tabela no PostgreSQL:
+## 12. Modelo Físico PostgreSQL
 
-- tipos de dados: `INTEGER`, `BIGINT`, `VARCHAR`, `TEXT`, `NUMERIC`, `TIMESTAMP`, `BOOLEAN`
-- representação do tipo de movimentação: enum de banco ou `VARCHAR` com `CHECK` (DOM-009)
-- precisão de valores monetários: `NUMERIC(p, s)` — precisão e escala a definir (referência: Parte 8 da análise TSK-2.1)
-- campos de data/hora com ou sem timezone
-- constraints `DEFAULT`
-- regras `ON DELETE` para cada FK
-- índices recomendados
+**Status: PENDENTE**
 
-Esta seção será preenchida durante as TSK-2.4 a TSK-2.8.
+Somente nas etapas seguintes serão definidos os detalhes físicos de cada tabela no PostgreSQL, incluindo tipos como `INTEGER`, SQL explícito (`CHECK`, `DEFAULT`, `ON DELETE`), índices, precisões para decimais (`NUMERIC`) e representação de enums no SGBD.
 
 ---
 
@@ -525,63 +639,51 @@ Esta seção reúne perguntas de estudo sobre modelagem de dados. As respostas e
 O Modelo Entidade-Relacionamento é uma representação conceitual do domínio. Descreve as entidades, seus atributos, os relacionamentos entre elas e as cardinalidades, de forma independente de tecnologia.
 
 **O que é DER?**
-O Diagrama Entidade-Relacionamento é a representação visual do MER. Mostra graficamente as entidades, atributos e relacionamentos.
+O Diagrama Entidade-Relacionamento é a representação visual gráfica do MER.
 
-**Qual a diferença entre MER e modelo relacional?**
-O MER é conceitual e tecnologia-independente. O modelo relacional traduz o MER para estruturas concretas de banco de dados: tabelas, colunas, PKs, FKs e constraints. Um relacionamento N:N no MER, por exemplo, se transforma em uma tabela de associação no modelo relacional.
+**Qual a diferença entre modelo relacional e físico?**
+O modelo relacional define a estrutura lógica independente de SGBD (tabelas, PKs, FKs, constraints lógicas). O modelo físico é a implementação real (ex: PostgreSQL) com tipos nativos, sintaxe SQL específica e definições de armazenamento.
 
-**O que é cardinalidade?**
-Cardinalidade define quantas instâncias de uma entidade se relacionam com instâncias de outra. As principais são:
-- **1:1** — uma entidade se relaciona com exatamente uma da outra.
-- **1:N** — uma entidade se relaciona com muitas da outra.
-- **N:N** — muitas instâncias de cada lado se relacionam entre si.
+**Como o MER foi convertido para o modelo relacional?**
+Transformando entidades em tabelas, atributos em colunas e aplicando regras de migração de chaves (a PK do lado 1 migra como FK para o lado N).
 
-**Como um relacionamento 1:N é mapeado para tabelas?**
-A chave primária do lado "1" é adicionada como chave estrangeira (FK) no lado "N". Exemplo: Categoria (1) ↔ Produto (N) → coluna `category_id` em Produto referenciando Categoria.
+**O que significa cardinalidade mínima e máxima?**
+A mínima define se o relacionamento é opcional (0) ou obrigatório (1). A máxima define o limite de associações: apenas uma (1) ou múltiplas (N).
 
-**Como um relacionamento N:N é mapeado para tabelas?**
-Cria-se uma tabela de associação com duas chaves estrangeiras, uma para cada entidade do relacionamento. A chave primária da tabela de associação é normalmente a combinação das duas FKs.
+**Por que a FK fica no lado N?**
+Porque o modelo relacional exige valores atômicos por coluna (1ª Forma Normal). O lado N pode ter vários registros apontando para o mesmo pai (lado 1).
 
-**O que é chave primária (PK)?**
-Um atributo ou conjunto de atributos que identifica unicamente cada linha de uma tabela. Não permite valores nulos nem duplicados.
+**Por que não existe tabela associativa?**
+Porque o modelo aprovado não possui relacionamentos N:N. Relacionamentos 1:N são resolvidos diretamente com chave estrangeira (FK) na própria tabela dependente.
 
-**O que é chave estrangeira (FK)?**
-Um atributo em uma tabela que referencia a chave primária de outra tabela. Garante que a referência aponte para um registro existente (integridade referencial).
-
-**O que é integridade referencial?**
-A garantia de que uma FK sempre aponta para um registro existente na tabela referenciada. O banco impede a criação de registros com FKs inválidas e impede a exclusão de registros referenciados por outros (a menos que CASCADE ou SET NULL estejam configurados).
+**Por que tipos PostgreSQL ainda não foram escolhidos?**
+Para manter a separação de responsabilidades. Definir tipos físicos agora misturaria o mapeamento lógico com especificidades de SGBD, antecipando restrições que pertencem à etapa do modelo físico.
 
 ### Específicas do StockFlow
 
-**Por que não começamos diretamente pelos models SQLAlchemy?**
-Porque models SQLAlchemy são a representação física da modelagem. Criá-los antes de definir o MER e o modelo relacional significa tomar decisões de banco de dados implicitamente, sem análise. Erros de modelagem descobertos depois exigem migrations corretivas e podem gerar retrabalho significativo.
+**Por que Categoria pode ter zero Produtos?**
+Porque uma categoria pode ser criada previamente no sistema antes que qualquer produto seja cadastrado nela (min 0).
 
-**Qual a diferença entre requisito explícito e decisão de modelagem?**
-Requisito explícito é o que o enunciado determina diretamente. Decisão de modelagem é como o desenvolvedor escolhe implementar aquele requisito (ou como representa algo que o requisito implica mas não especifica). Confundir os dois leva a tratar escolhas como obrigações ou a implementar algo sem fundamento no requisito.
+**Por que Produto exige exatamente uma Categoria?**
+Porque o domínio exige que todo produto seja classificado para organização do catálogo, não existindo produto "órfão" de categoria (min 1).
 
-**Por que movimentações exigem atenção especial à auditoria?**
-Porque são imutáveis por design. Uma vez criadas, não podem ser corrigidas pela API. Isso garante que o histórico seja confiável e não possa ser adulterado retroativamente. Toda alteração de estoque deve ser rastreável por uma movimentação correspondente. Se a operação de criação de movimentação e atualização de estoque não for atômica, o banco pode ficar em estado inconsistente.
+**Por que Fornecedor pode ter zero Produtos?**
+Porque um fornecedor pode ser homologado e cadastrado no sistema antes de fornecer seu primeiro produto (min 0).
+
+**Por que Movimentação exige exatamente um Produto?**
+Porque não existe movimentação genérica de estoque. Toda movimentação afeta o saldo de um item específico (min 1).
+
+**Por que Movimentação possui produto_id e fornecedor_id?**
+O `produto_id` identifica qual saldo foi alterado. O `fornecedor_id` preserva qual era o fornecedor daquele produto no exato momento da movimentação (DEC-010).
+
+**Por que Produto.fornecedor_id e Movimentacao.fornecedor_id não representam a mesma informação temporal?**
+`Produto.fornecedor_id` representa o fornecedor cadastral *atual* (mutável ao longo do tempo). `Movimentacao.fornecedor_id` representa um retrato histórico (imutável) de quem era o fornecedor na data do evento. Mantê-los separados garante rastreabilidade temporal sem duplicação indevida.
 
 **Por que Categoria–Produto foi modelado como 1:N?**
 Porque o desafio não exige múltiplas categorias por produto, a relação 1:N atende ao escopo, evita tabela associativa sem necessidade, e simplifica a integridade e o CRUD. (DEC-008)
 
 **Por que Produto–Fornecedor foi modelado como 1:N?**
 Porque satisfaz o requisito atual de forma mais simples e a presença de múltiplos fornecedores na loja não implica que um mesmo produto seja fornecido por vários simultaneamente. (DEC-009)
-
-**Por que não usamos N:N para Produto–Fornecedor?**
-Porque adicionaria complexidade não solicitada (gestão de associações e ambiguidade no filtro histórico), e a tabela associativa não traz benefício dentro do escopo do desafio.
-
-**Por que Movimentação possui referência direta ao Fornecedor se Produto já possui?**
-Para garantir a integridade do histórico. Se o fornecedor atual do produto for alterado no futuro, um JOIN indireto (`Movimentação -> Produto -> Fornecedor`) associaria movimentações antigas ao novo fornecedor. (DEC-010)
-
-**Isso não é duplicação de dados?**
-Não de forma indevida, pois as semânticas temporais são diferentes: o Produto armazena o fornecedor cadastral *atual*, enquanto a Movimentação armazena o fornecedor associado ao Produto *no momento daquele evento*.
-
-**O que acontece historicamente se o fornecedor de um Produto mudar?**
-O `supplier_id` do Produto é atualizado para o novo fornecedor. Movimentações antigas preservam o `supplier_id` anterior (histórico), e as novas receberão o novo `supplier_id`. O filtro por fornecedor continuará exato historicamente.
-
-**O que supplier_id significa numa movimentação de saída?**
-Não significa que o fornecedor "causou" ou participou da saída, mas sim que ele era o fornecedor cadastral histórico do produto naquele momento da movimentação.
 
 **Por que a quantidade_em_estoque não é calculada em tempo real (on-the-fly) pelas movimentações?**
 Porque o domínio conceitual exige que ela seja uma propriedade do Produto (RE-01) e persista seu valor para eficiência. Calcular em tempo real para toda listagem prejudicaria a performance de consultas. A consistência é mantida atualizando o saldo persistido exclusivamente através de movimentações (DEC-012).
@@ -618,7 +720,5 @@ Porque a consistência histórica do estoque e a auditoria de movimentações s�
 | v0.6 | TSK-2.3 — Resolução de DOM-011 e DOM-012 (quantidade e saída de estoque) | CONCLUÍDO |
 | v0.7 | TSK-2.3 — Resolução de DOM-009 e DOM-010 (tipo e data da movimentação) | CONCLUÍDO |
 | v0.8 | TSK-2.3 — Resolução de DOM-007, DOM-008 e DOM-013 (regras de exclusão) | CONCLUÍDO |
-| v0.9 | MER aprovado com cardinalidades definidas | PENDENTE |
-| v0.10 | DER em Mermaid versionado | PENDENTE |
-| v0.11 | Modelo relacional mapeado | PENDENTE |
-| v0.12 | Modelo físico PostgreSQL definido (TSK-2.4) | PENDENTE |
+| v0.9 | TSK-2.4 — Consolidação do MER, min/max, DER completo em Mermaid e modelo relacional mapeado | CONCLUÍDO |
+| v0.10 | TSK-2.5 — Modelo físico PostgreSQL definido | PENDENTE |
