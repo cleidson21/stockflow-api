@@ -160,11 +160,11 @@ Produto é a entidade central do sistema. Representa um item físico gerenciado 
 | `quantidade_em_estoque` | — |
 | `data_cadastro` | — |
 
-**Relacionamentos ainda em análise:**
+**Relacionamentos:**
 
-- Produto ↔ Categoria: cardinalidade em aberto (DOM-001)
-- Produto ↔ Fornecedor: cardinalidade em aberto (DOM-002)
-- Produto ↔ Movimentação: 1:N confirmado como inferência estrutural (ver seção 5.2)
+- Categoria 1:N — cada Produto pertence a uma Categoria
+- Fornecedor 1:N — cada Produto possui um Fornecedor cadastral
+- Produto 1:N Movimentação (confirmado como inferência estrutural, ver seção 5.2)
 
 **Possíveis necessidades adicionais:**
 
@@ -173,8 +173,6 @@ Produto é a entidade central do sistema. Representa um item físico gerenciado 
 
 **Decisões abertas:**
 
-- DOM-001: cardinalidade com Categoria
-- DOM-002: cardinalidade com Fornecedor
 - DOM-004: campo de estoque mínimo (nome, tipo, default, validações)
 - DOM-005: `quantidade_em_estoque` alterável diretamente ou somente via movimentações
 - DOM-006: representação do estoque inicial
@@ -197,10 +195,10 @@ Fornecedor representa a entidade externa que provê produtos para a loja. Deve s
 | `telefone` | — |
 | `email` | UNIQUE |
 
-**Relacionamentos ainda em análise:**
+**Relacionamentos:**
 
-- Fornecedor ↔ Produto: cardinalidade em aberto (DOM-002)
-- Fornecedor ↔ Movimentação: rastreabilidade em aberto (DOM-003)
+- Fornecedor 1:N Produto
+- Fornecedor 1:N Movimentação como referência histórica
 
 **Possíveis necessidades adicionais:**
 
@@ -208,8 +206,6 @@ Fornecedor representa a entidade externa que provê produtos para a loja. Deve s
 
 **Decisões abertas:**
 
-- DOM-002: cardinalidade com Produto
-- DOM-003: como movimentações referenciam fornecedor
 - DOM-008: política de exclusão de fornecedor relacionado a histórico
 
 ---
@@ -226,9 +222,9 @@ Categoria é uma classificação aplicada a produtos. É intencionalmente simple
 | `id` | Identificador único |
 | `nome` | UNIQUE |
 
-**Relacionamentos ainda em análise:**
+**Relacionamentos:**
 
-- Categoria ↔ Produto: cardinalidade em aberto (DOM-001)
+- Categoria 1:N Produto
 
 **Possíveis necessidades adicionais:**
 
@@ -236,7 +232,6 @@ Categoria é uma classificação aplicada a produtos. É intencionalmente simple
 
 **Decisões abertas:**
 
-- DOM-001: cardinalidade com Produto
 - DOM-013: política de exclusão de categoria com produtos
 
 ---
@@ -255,10 +250,11 @@ Movimentação é o registro imutável de auditoria de cada alteração no estoq
 | `quantidade` | — |
 | `data` | — |
 
-**Relacionamentos ainda em análise:**
+**Relacionamentos:**
 
-- Movimentação ↔ Produto: identificado como inferência estrutural necessária (ver seção 5.2)
-- Movimentação ↔ Fornecedor: referência direta ou indireta em aberto (DOM-003)
+- Produto 1:N Movimentação
+- Fornecedor 1:N Movimentação
+- Fornecedor histórico capturado do Produto na criação
 
 **Possíveis necessidades adicionais:**
 
@@ -267,7 +263,6 @@ Movimentação é o registro imutável de auditoria de cada alteração no estoq
 
 **Decisões abertas:**
 
-- DOM-003: como Fornecedor é referenciado na movimentação
 - DOM-009: representação do tipo (enum, string com CHECK, outro)
 - DOM-010: origem da data (gerada pelo servidor ou informada pelo cliente)
 - DOM-011: quantidade aceita zero? aceita negativo?
@@ -325,16 +320,25 @@ As proposições abaixo emergem da análise do domínio como prováveis, mas **a
 | RP-02 | Quantidade de movimentação deve ser estritamente positiva (> 0) | DOM-011 |
 | RP-03 | `quantidade_em_estoque` em Produto não pode ser alterada diretamente pelo CRUD após criação; somente via movimentações | DOM-005 |
 | RP-04 | Produto pode ser criado com quantidade inicial e gerar automaticamente uma movimentação de entrada | DOM-006 |
-| RP-05 | Um produto pertence a uma única categoria (cardinalidade 1:N) | DOM-001 |
-| RP-06 | Um produto possui um único fornecedor (cardinalidade 1:N) | DOM-002 |
 | RP-07 | Exclusão de produto com movimentações deve ser impedida (RESTRICT) | DOM-007 |
 | RP-08 | Exclusão de fornecedor com produtos associados deve ser impedida (RESTRICT) | DOM-008 |
 | RP-09 | Exclusão de categoria com produtos deve ser impedida (RESTRICT) | DOM-013 |
 | RP-10 | `data` de movimentação é gerada pelo servidor no momento da criação | DOM-010 |
 | RP-11 | `tipo` de movimentação é representado como string com CHECK constraint ou enum de banco | DOM-009 |
-| RP-12 | Referência ao fornecedor em movimentação de entrada é derivada via produto (não campo direto) | DOM-003 |
 
 > ⚠️ Nenhuma das regras acima deve ser implementada antes de sua decisão DOM correspondente ser formalmente aprovada.
+
+---
+
+### 5.4 Decisões de modelagem aprovadas
+
+As regras abaixo foram formalmente decididas e aprovadas:
+
+| # | Regra aprovada | DEC correspondente |
+|---|---|---|
+| RA-01 | Um produto pertence a uma única categoria (cardinalidade 1:N) | DEC-008 |
+| RA-02 | Um produto possui um único fornecedor cadastral (cardinalidade 1:N) | DEC-009 |
+| RA-03 | Movimentação armazena referência direta e histórica ao fornecedor associado ao Produto no momento da criação | DEC-010 |
 
 ---
 
@@ -344,9 +348,9 @@ As questões abaixo permanecem abertas até aprovação explícita. Nenhuma deve
 
 | ID | Questão | Requisito relacionado | Alternativas | Impacto | Dependências | Status |
 |---|---|---|---|---|---|---|
-| DOM-001 | Cardinalidade Categoria–Produto: um produto pertence a uma ou múltiplas categorias? | RE-09 (exclusão de categoria com produtos) | 1:N — FK em Produto; N:N — tabela associativa | Estrutura do banco; política de exclusão; complexidade do CRUD | — | **OPEN** |
-| DOM-002 | Cardinalidade Fornecedor–Produto: um produto tem um ou múltiplos fornecedores? | RE-12 (filtro por fornecedor) | 1:N — FK em Produto; N:N — tabela associativa | Estrutura do banco; rastreabilidade histórica; complexidade do filtro | — | **OPEN** |
-| DOM-003 | Como a Movimentação referencia o Fornecedor para permitir filtro? | RE-12 (filtro de movimentações por fornecedor) | (a) Join via Produto; (b) `supplier_id` opcional direto na movimentação | Rastreabilidade histórica se fornecedor do produto mudar; complexidade de JOIN | DOM-002 | **OPEN** |
+| DOM-001 | Cardinalidade Categoria–Produto: um produto pertence a uma ou múltiplas categorias? | RE-09 (exclusão de categoria com produtos) | 1:N — FK em Produto; N:N — tabela associativa | Estrutura do banco; política de exclusão; complexidade do CRUD | — | **CLOSED / ACCEPTED (DEC-008)** |
+| DOM-002 | Cardinalidade Fornecedor–Produto: um produto tem um ou múltiplos fornecedores? | RE-12 (filtro por fornecedor) | 1:N — FK em Produto; N:N — tabela associativa | Estrutura do banco; rastreabilidade histórica; complexidade do filtro | — | **CLOSED / ACCEPTED (DEC-009)** |
+| DOM-003 | Como a Movimentação referencia o Fornecedor para permitir filtro? | RE-12 (filtro de movimentações por fornecedor) | (a) Join via Produto; (b) `supplier_id` opcional direto na movimentação | Rastreabilidade histórica se fornecedor do produto mudar; complexidade de JOIN | DOM-002 | **CLOSED / ACCEPTED (DEC-010)** |
 | DOM-004 | Como representar estoque mínimo por produto? Nome, tipo, valor padrão, validações | RE-10 (consulta estoque mínimo) | Campo `estoque_minimo` em Produto; global fixo; parâmetro na query | Impossibilidade da consulta sem valor de referência | — | **OPEN** |
 | DOM-005 | `quantidade_em_estoque` pode ser alterada diretamente no CRUD de Produto após criação? | RE-07 (movimentação atualiza estoque); auditoria | (A) Livre no CRUD; (B) Somente via movimentações; (C) Ajuste de inventário como tipo especial | Integridade e rastreabilidade do histórico | — | **OPEN** |
 | DOM-006 | Como representar o estoque inicial de um produto recém-cadastrado? | RE-01 (campo `quantidade_em_estoque`) | (1) Campo direto na criação sem movimentação; (2) Sempre zero + movimentação manual; (3) Campo gera movimentação automática | Auditoria; UX da API; consistência | DOM-005 | **OPEN** |
@@ -366,9 +370,9 @@ A ordem abaixo respeita as dependências entre as decisões. Decisões anteriore
 
 | Prioridade | ID | Justificativa da posição |
 |---|---|---|
-| 1 | DOM-001 | Define se haverá FK simples ou tabela associativa entre Produto e Categoria |
-| 2 | DOM-002 | Define se haverá FK simples ou tabela associativa entre Produto e Fornecedor |
-| 3 | DOM-003 | Depende de DOM-002; define o modelo de rastreabilidade do fornecedor na movimentação |
+| **Resolvido** | **DOM-001** | **Define se haverá FK simples ou tabela associativa entre Produto e Categoria** |
+| **Resolvido** | **DOM-002** | **Define se haverá FK simples ou tabela associativa entre Produto e Fornecedor** |
+| **Resolvido** | **DOM-003** | **Depende de DOM-002; define o modelo de rastreabilidade do fornecedor na movimentação** |
 | 4 | DOM-004 | Define campo adicional em Produto; necessário para a consulta de estoque mínimo |
 | 5 | DOM-005 | Define regra central de negócio para o CRUD de Produto |
 | 6 | DOM-006 | Depende de DOM-005; define o comportamento da criação do produto com estoque |
@@ -386,7 +390,7 @@ A ordem abaixo respeita as dependências entre as decisões. Decisões anteriore
 
 ## 8. MER — Modelo Conceitual
 
-**Status: EM CONSTRUÇÃO — aguardando resolução de DOM-001, DOM-002 e DOM-003**
+**Status: PARCIALMENTE APROVADO — relacionamentos centrais definidos; demais regras DOM ainda em resolução.**
 
 ### Entidades obrigatórias identificadas
 
@@ -401,45 +405,59 @@ As quatro entidades abaixo são confirmadas como presentes no domínio:
 
 | Relacionamento | Cardinalidade | Status |
 |---|---|---|
-| Categoria ↔ Produto | Ainda em aberto | DOM-001 OPEN |
-| Fornecedor ↔ Produto | Ainda em aberto | DOM-002 OPEN |
+| Categoria ↔ Produto | 1:N | DEC-008 (Resolvido) |
+| Fornecedor ↔ Produto | 1:N | DEC-009 (Resolvido) |
 | Produto ↔ Movimentação | 1:N (Produto tem muitas Movimentações) | Inferência confirmada (IE-01) |
-| Fornecedor ↔ Movimentação | Ainda em aberto | DOM-003 OPEN |
+| Fornecedor ↔ Movimentação | 1:N | DEC-010 (Fornecedor histórico associado ao Produto no momento da movimentação) |
 
-O MER completo com cardinalidades definidas será produzido após resolução de DOM-001, DOM-002 e DOM-003.
+O MER completo será produzido após a resolução das demais questões DOM abertas.
 
 ---
 
 ## 9. DER — Diagrama Entidade-Relacionamento
 
-**Status: AGUARDANDO DECISÕES DOM-001 / DOM-002 / DOM-003**
+**Status: PARCIAL — aguardando decisões DOM restantes**
 
-O DER será representado em sintaxe Mermaid (`erDiagram`) e versionado nesta seção após aprovação das cardinalidades.
+O DER será representado em sintaxe Mermaid (`erDiagram`) e versionado nesta seção.
 
 ```mermaid
-%% DER será inserido aqui após aprovação do MER.
-%% Aguardando resolução de DOM-001, DOM-002 e DOM-003.
+erDiagram
+    CATEGORIA ||--o{ PRODUTO : classifica
+    FORNECEDOR ||--o{ PRODUTO : fornece
+    PRODUTO ||--o{ MOVIMENTACAO_ESTOQUE : possui
+    FORNECEDOR ||--o{ MOVIMENTACAO_ESTOQUE : referencia_historica
 ```
+
+**Nota sobre a notação:**
+- `||` no lado de Categoria/Fornecedor/Produto representa uma entidade obrigatória para a instância relacionada (ou seja, todo Produto tem uma Categoria obrigatória).
+- `o{` indica zero ou muitas ocorrências do lado plural.
+- O diagrama ainda é parcial; atributos e constraints restantes serão completados após DOM-004 em diante.
 
 ---
 
 ## 10. Mapeamento E-R → Modelo Relacional
 
-**Status: AGUARDANDO MER APROVADO**
+**Status: PARCIALMENTE APROVADO — aguardando demais decisões DOM**
 
 Esta seção descreverá, para cada entidade e relacionamento aprovado no MER, a tabela relacional resultante.
 
-Para cada tabela serão documentados:
+**Consequências já garantidas pelas decisões:**
 
-- nome da tabela;
-- chave primária (PK);
-- chaves estrangeiras (FK) e tabelas referenciadas;
-- constraints UNIQUE;
-- constraints NOT NULL;
-- constraints CHECK;
-- tabelas associativas quando necessárias (relacionamentos N:N).
+- O relacionamento Categoria 1:N Produto será mapeado futuramente por FK no lado Produto;
+- O relacionamento Fornecedor 1:N Produto será mapeado futuramente por FK no lado Produto;
+- O relacionamento Produto 1:N Movimentação implica FK de Produto em Movimentação;
+- O relacionamento Fornecedor 1:N Movimentação implica FK de Fornecedor em Movimentação.
 
-Esta seção será preenchida após DOM-001, DOM-002, DOM-003 e DOM-004 estarem resolvidos.
+Ainda **não** estão definidos:
+
+- Nomes físicos finais;
+- Tipos SQL;
+- Regras de exclusão (ON DELETE);
+- Nullability física além da semântica conceitual já decidida;
+- Índices;
+- Constraints restantes.
+
+Esta seção será preenchida completamente após DOM-004 e as demais estarem resolvidas.
 
 ---
 
@@ -541,7 +559,28 @@ Requisito explícito é o que o enunciado determina diretamente. Decisão de mod
 **Por que movimentações exigem atenção especial à auditoria?**
 Porque são imutáveis por design. Uma vez criadas, não podem ser corrigidas pela API. Isso garante que o histórico seja confiável e não possa ser adulterado retroativamente. Toda alteração de estoque deve ser rastreável por uma movimentação correspondente. Se a operação de criação de movimentação e atualização de estoque não for atômica, o banco pode ficar em estado inconsistente.
 
-> Respostas adicionais sobre cardinalidades, políticas de exclusão e regras de negócio específicas do StockFlow serão acrescentadas conforme DOM-001 a DOM-013 forem resolvidos.
+**Por que Categoria–Produto foi modelado como 1:N?**
+Porque o desafio não exige múltiplas categorias por produto, a relação 1:N atende ao escopo, evita tabela associativa sem necessidade, e simplifica a integridade e o CRUD. (DEC-008)
+
+**Por que Produto–Fornecedor foi modelado como 1:N?**
+Porque satisfaz o requisito atual de forma mais simples e a presença de múltiplos fornecedores na loja não implica que um mesmo produto seja fornecido por vários simultaneamente. (DEC-009)
+
+**Por que não usamos N:N para Produto–Fornecedor?**
+Porque adicionaria complexidade não solicitada (gestão de associações e ambiguidade no filtro histórico), e a tabela associativa não traz benefício dentro do escopo do desafio.
+
+**Por que Movimentação possui referência direta ao Fornecedor se Produto já possui?**
+Para garantir a integridade do histórico. Se o fornecedor atual do produto for alterado no futuro, um JOIN indireto (`Movimentação -> Produto -> Fornecedor`) associaria movimentações antigas ao novo fornecedor. (DEC-010)
+
+**Isso não é duplicação de dados?**
+Não de forma indevida, pois as semânticas temporais são diferentes: o Produto armazena o fornecedor cadastral *atual*, enquanto a Movimentação armazena o fornecedor associado ao Produto *no momento daquele evento*.
+
+**O que acontece historicamente se o fornecedor de um Produto mudar?**
+O `supplier_id` do Produto é atualizado para o novo fornecedor. Movimentações antigas preservam o `supplier_id` anterior (histórico), e as novas receberão o novo `supplier_id`. O filtro por fornecedor continuará exato historicamente.
+
+**O que supplier_id significa numa movimentação de saída?**
+Não significa que o fornecedor "causou" ou participou da saída, mas sim que ele era o fornecedor cadastral histórico do produto naquele momento da movimentação.
+
+> Respostas adicionais sobre políticas de exclusão e outras regras de negócio serão acrescentadas conforme as decisões DOM restantes forem resolvidas.
 
 ---
 
@@ -551,7 +590,7 @@ Porque são imutáveis por design. Uma vez criadas, não podem ser corrigidas pe
 |---|---|---|
 | v0.1 | TSK-2.1 — Levantamento inicial de domínio e ambiguidades (13 questões DOM identificadas) | CONCLUÍDO |
 | v0.2 | TSK-2.1B — Documentação formal da análise em DOMAIN_MODELING.md | CONCLUÍDO |
-| v0.3 | TSK-2.2 — Resolução de DOM-001 a DOM-003 (cardinalidades e referência de fornecedor) | PENDENTE |
+| v0.3 | TSK-2.2 — Resolução de DOM-001 a DOM-003 (relacionamentos centrais, MER parcial, primeiro DER parcial) | CONCLUÍDO |
 | v0.4 | TSK-2.3 — Resolução de DOM-004 (estoque mínimo) e demais DOM | PENDENTE |
 | v0.5 | MER aprovado com cardinalidades definidas | PENDENTE |
 | v0.6 | DER em Mermaid versionado | PENDENTE |
