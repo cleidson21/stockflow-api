@@ -628,6 +628,80 @@ No escopo atual, saldos negativos não fazem sentido sem fluxos avançados de ve
 
 ---
 
+## DEC-016 — Tipo da Movimentação
+
+Status: ACCEPTED
+
+### Contexto
+
+Para registrar movimentações de estoque de forma consistente, era necessário definir como os tipos de movimentação seriam representados conceitualmente na entidade Movimentação.
+
+### Opções consideradas
+
+1. **Booleano:** Representar a movimentação como um booleano (ex.: `is_entrada` verdadeiro ou falso).
+2. **Conjunto fechado de valores explícitos:** Representar com tipos semânticos específicos e claros, como ENTRADA e SAÍDA.
+
+### Decisão
+
+O atributo conceitual `tipo` da Movimentação representa um conjunto fechado com **exatamente dois valores semânticos**:
+
+- ENTRADA
+- SAÍDA
+
+**Regras aprovadas:**
+- ENTRADA aumenta o saldo do Produto.
+- SAÍDA diminui o saldo do Produto.
+- Nenhum terceiro tipo (como ajuste, inventário, devolução, transferência, etc.) está previsto no escopo atual.
+- Booleano não será utilizado como representação conceitual, pois é menos expressivo.
+
+*(Nota: A escolha física entre PostgreSQL ENUM, VARCHAR + CHECK ou outra implementação não será feita nesta etapa).*
+
+### Justificativa
+
+Um domínio estrito com ENTRADA e SAÍDA abrange totalmente os requisitos do desafio. Usar nomes explícitos em vez de booleanos torna a regra de negócio expressiva, clara e robusta, facilitando a leitura de código e de registros de auditoria. Evitar novos tipos simplifica a solução e mantém o foco no requisito principal.
+
+### Consequências
+
+- A validação da Movimentação exigirá que o atributo `tipo` seja estritamente um dos dois valores.
+- A aplicação terá que lidar com qualquer fluxo excepcional convertendo-o para uma entrada ou saída básica.
+
+---
+
+## DEC-017 — Data da Movimentação
+
+Status: ACCEPTED
+
+### Contexto
+
+Cada movimentação de estoque funciona como um registro de auditoria, exigindo o armazenamento de data e hora para ordenação e filtro histórico. Era necessário decidir a origem e granularidade desse valor.
+
+### Opções consideradas
+
+1. **Informada pelo cliente (Payload):** O cliente envia a data desejada na requisição (permitindo registros retroativos).
+2. **Determinada pelo servidor:** O backend captura a data/hora no momento de processamento da criação.
+
+### Decisão
+
+A data/hora da Movimentação será **determinada pelo servidor no momento da criação**.
+
+**Regras aprovadas:**
+- O cliente não informa livremente essa data/hora.
+- Não haverá registro retroativo nesta versão do projeto.
+- O valor representa o momento exato em que a Movimentação é registrada pelo sistema.
+- A informação precisa permitir ordenação temporal e filtro por período.
+- Conceitualmente, deve possuir precisão de data e hora (não apenas o dia).
+
+*(Nota: Detalhes como TIMESTAMP vs TIMESTAMPTZ, timezone, UTC ou default físico no PostgreSQL serão definidos no modelo físico).*
+
+### Justificativa
+
+Como a Movimentação é um registro de auditoria crítico para o sistema, gerar a data no servidor reduz o risco de manipulação ou erro de data. Lançamentos retroativos não são requisitos do desafio e a sua ausência simplifica bastante o contrato da API.
+
+### Consequências
+
+- Os payloads de requisição para criação de movimentação (input) rejeitarão ou ignorarão informações de data.
+- A própria camada de aplicação ou banco de dados injetará o valor atual.
+
 ## PEND-005 — SQLAlchemy síncrono ou assíncrono
 
 Status: PROPOSED

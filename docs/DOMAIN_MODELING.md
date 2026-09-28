@@ -322,8 +322,6 @@ As proposições abaixo emergem da análise do domínio como prováveis, mas **a
 | RP-07 | Exclusão de produto com movimentações deve ser impedida (RESTRICT) | DOM-007 |
 | RP-08 | Exclusão de fornecedor com produtos associados deve ser impedida (RESTRICT) | DOM-008 |
 | RP-09 | Exclusão de categoria com produtos deve ser impedida (RESTRICT) | DOM-013 |
-| RP-10 | `data` de movimentação é gerada pelo servidor no momento da criação | DOM-010 |
-| RP-11 | `tipo` de movimentação é representado como string com CHECK constraint ou enum de banco | DOM-009 |
 
 > ⚠️ Nenhuma das regras acima deve ser implementada antes de sua decisão DOM correspondente ser formalmente aprovada.
 
@@ -343,6 +341,8 @@ As regras abaixo foram formalmente decididas e aprovadas:
 | RA-06 | Produto nasce com estoque zero; adição de estoque inicial exige Movimentação de entrada separada | DEC-013 |
 | RA-07 | Quantidade da Movimentação deve ser estritamente maior que zero (representa apenas magnitude) | DEC-014 |
 | RA-08 | Saída acima do saldo disponível no Produto é inválida; estoque negativo não é permitido | DEC-015 |
+| RA-09 | O `tipo` de Movimentação é um conjunto fechado de 2 valores (ENTRADA e SAÍDA) | DEC-016 |
+| RA-10 | A `data` da Movimentação é gerada pelo servidor no momento da criação | DEC-017 |
 
 ---
 
@@ -360,8 +360,8 @@ As questões abaixo permanecem abertas até aprovação explícita. Nenhuma deve
 | DOM-006 | Como representar o estoque inicial de um produto recém-cadastrado? | RE-01 (campo `quantidade_em_estoque`) | (1) Campo direto na criação sem movimentação; (2) Sempre zero + movimentação manual; (3) Campo gera movimentação automática | Auditoria; UX da API; consistência | DOM-005 | **CLOSED / ACCEPTED (DEC-013)** |
 | DOM-007 | O que acontece ao excluir um Produto que possui movimentações? | RE-05/RE-06 (imutabilidade); auditoria | RESTRICT; CASCADE (destrói histórico); SET NULL; soft delete | Preservação do histórico de auditoria | — | **OPEN** |
 | DOM-008 | O que acontece ao excluir um Fornecedor relacionado a produtos ou movimentações? | RE-12 (filtro por fornecedor); integridade | RESTRICT; SET NULL; soft delete | Rastreabilidade histórica; integridade do filtro por fornecedor | DOM-003 | **OPEN** |
-| DOM-009 | Como representar o tipo entrada/saída na Movimentação? | RE-04 (campo `tipo`) | Enum de banco; VARCHAR com CHECK; booleano | Clareza semântica; portabilidade entre SGBDs | — | **OPEN** |
-| DOM-010 | A `data` da movimentação é gerada pelo servidor ou informada pelo cliente? | RE-04 (campo `data`) | Servidor (timestamp do momento da criação); cliente (informado no corpo da requisição) | Confiabilidade da auditoria; possibilidade de registros retroativos | — | **OPEN** |
+| DOM-009 | Como representar o tipo entrada/saída na Movimentação? | RE-04 (campo `tipo`) | Enum de banco; VARCHAR com CHECK; booleano | Clareza semântica; portabilidade entre SGBDs | — | **CLOSED / ACCEPTED (DEC-016)** |
+| DOM-010 | A `data` da movimentação é gerada pelo servidor ou informada pelo cliente? | RE-04 (campo `data`) | Servidor (timestamp do momento da criação); cliente (informado no corpo da requisição) | Confiabilidade da auditoria; possibilidade de registros retroativos | — | **CLOSED / ACCEPTED (DEC-017)** |
 | DOM-011 | Quantidade de movimentação aceita zero? Aceita negativo? | RE-07 (movimentação altera estoque) | Somente > 0; aceitar zero; aceitar negativo | Integridade dos registros de auditoria; significado semântico | — | **CLOSED / ACCEPTED (DEC-014)** |
 | DOM-012 | Saída de estoque pode ultrapassar a quantidade disponível? | RE-07; integridade do estoque | Bloquear com erro; permitir (estoque negativo); permitir com alerta | Possibilidade de estoque negativo | DOM-011 | **CLOSED / ACCEPTED (DEC-015)** |
 | DOM-013 | O que acontece ao excluir uma Categoria que possui produtos associados? | RE-09 (comportamento explicitamente mencionado) | RESTRICT; SET NULL (produto sem categoria); CASCADE (deleta produtos); soft delete da categoria | Integridade dos produtos; produtos órfãos de categoria | DOM-001 | **OPEN** |
@@ -380,8 +380,8 @@ A ordem abaixo respeita as dependências entre as decisões. Decisões anteriore
 | **Resolvido** | **DOM-004** | **Define campo adicional em Produto; necessário para a consulta de estoque mínimo** |
 | **Resolvido** | **DOM-005** | **Define regra central de negócio para o CRUD de Produto** |
 | **Resolvido** | **DOM-006** | **Depende de DOM-005; define o comportamento da criação do produto com estoque** |
-| 7 | DOM-009 | Define o campo `tipo` no modelo de movimentação |
-| 8 | DOM-010 | Define o campo `data` no modelo de movimentação |
+| **Resolvido** | **DOM-009** | **Define o campo `tipo` no modelo de movimentação** |
+| **Resolvido** | **DOM-010** | **Define o campo `data` no modelo de movimentação** |
 | **Resolvido** | **DOM-011** | **Define validação de quantidade na movimentação** |
 | **Resolvido** | **DOM-012** | **Define regra de negócio para saídas; depende de DOM-011** |
 | 11 | DOM-013 | Define comportamento de exclusão de Categoria; depende de DOM-001 |
@@ -600,6 +600,12 @@ A quantidade da movimentação representa a magnitude da operação e deve ser s
 **O sistema permite estoque negativo?**
 Não. Uma movimentação de saída só é válida se a quantidade não ultrapassar o saldo disponível. Saldos negativos implicam em promessas de compra/backorder que não fazem parte do escopo atual do desafio, portanto bloquear a operação previne a corrupção do estoque (DEC-015).
 
+**Por que não usar um tipo booleano para a Movimentação (ex: is_entrada)?**
+O atributo `tipo` representa um conceito semântico do domínio de negócios (Entrada ou Saída). Um booleano reduz a expressividade do modelo. Nomes explícitos (ENTRADA, SAÍDA) facilitam a leitura e compreensão dos registros de auditoria e evitam confusões, sem prejudicar a performance (DEC-016).
+
+**Por que a data da movimentação não pode ser informada pelo cliente na requisição?**
+Movimentações são registros de auditoria do sistema, devendo refletir a realidade do momento em que ocorreram no banco de dados. Permitir que o cliente envie a data abre margem para lançamentos retroativos, fraudes ou inconsistências de fuso horário/relógios locais, além de fugir do escopo essencial do desafio (DEC-017).
+
 > Respostas adicionais sobre políticas de exclusão e outras regras de negócio serão acrescentadas conforme as decisões DOM restantes forem resolvidas.
 
 ---
@@ -614,7 +620,8 @@ Não. Uma movimentação de saída só é válida se a quantidade não ultrapass
 | v0.4 | TSK-2.3 — Resolução de DOM-004 (estoque mínimo) | CONCLUÍDO |
 | v0.5 | TSK-2.3 — Resolução de DOM-005 e DOM-006 (quantidade em estoque e saldo inicial) | CONCLUÍDO |
 | v0.6 | TSK-2.3 — Resolução de DOM-011 e DOM-012 (quantidade e saída de estoque) | CONCLUÍDO |
-| v0.7 | MER aprovado com cardinalidades definidas | PENDENTE |
-| v0.8 | DER em Mermaid versionado | PENDENTE |
-| v0.9 | Modelo relacional mapeado | PENDENTE |
-| v0.10 | Modelo físico PostgreSQL definido (TSK-2.4) | PENDENTE |
+| v0.7 | TSK-2.3 — Resolução de DOM-009 e DOM-010 (tipo e data da movimentação) | CONCLUÍDO |
+| v0.8 | MER aprovado com cardinalidades definidas | PENDENTE |
+| v0.9 | DER em Mermaid versionado | PENDENTE |
+| v0.10 | Modelo relacional mapeado | PENDENTE |
+| v0.11 | Modelo físico PostgreSQL definido (TSK-2.4) | PENDENTE |
