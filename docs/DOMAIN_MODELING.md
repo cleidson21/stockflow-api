@@ -157,7 +157,7 @@ Produto é a entidade central do sistema. Representa um item físico gerenciado 
 | `sku` | UNIQUE |
 | `preco_custo` | — |
 | `preco_venda` | — |
-| `quantidade_em_estoque` | — |
+| `quantidade_em_estoque` | Saldo inicial zero; alterado exclusivamente via Movimentação (DEC-012, DEC-013) |
 | `data_cadastro` | — |
 
 **Atributos adicionais aprovados:**
@@ -179,8 +179,6 @@ Produto é a entidade central do sistema. Representa um item físico gerenciado 
 
 **Decisões abertas:**
 
-- DOM-005: `quantidade_em_estoque` alterável diretamente ou somente via movimentações
-- DOM-006: representação do estoque inicial
 - DOM-007: política de exclusão de produto com movimentações
 
 ---
@@ -323,8 +321,6 @@ As proposições abaixo emergem da análise do domínio como prováveis, mas **a
 |---|---|---|
 | RP-01 | Saída de estoque não pode produzir quantidade negativa | DOM-012 |
 | RP-02 | Quantidade de movimentação deve ser estritamente positiva (> 0) | DOM-011 |
-| RP-03 | `quantidade_em_estoque` em Produto não pode ser alterada diretamente pelo CRUD após criação; somente via movimentações | DOM-005 |
-| RP-04 | Produto pode ser criado com quantidade inicial e gerar automaticamente uma movimentação de entrada | DOM-006 |
 | RP-07 | Exclusão de produto com movimentações deve ser impedida (RESTRICT) | DOM-007 |
 | RP-08 | Exclusão de fornecedor com produtos associados deve ser impedida (RESTRICT) | DOM-008 |
 | RP-09 | Exclusão de categoria com produtos deve ser impedida (RESTRICT) | DOM-013 |
@@ -345,6 +341,8 @@ As regras abaixo foram formalmente decididas e aprovadas:
 | RA-02 | Um produto possui um único fornecedor cadastral (cardinalidade 1:N) | DEC-009 |
 | RA-03 | Movimentação armazena referência direta e histórica ao fornecedor associado ao Produto no momento da criação | DEC-010 |
 | RA-04 | Produto possui o atributo `estoque_minimo` (obrigatório, numérico inteiro, sem default, >= 0) | DEC-011 |
+| RA-05 | `quantidade_em_estoque` é um saldo persistido, atualizado exclusivamente por Movimentação, não alterável livremente no CRUD | DEC-012 |
+| RA-06 | Produto nasce com estoque zero; adição de estoque inicial exige Movimentação de entrada separada | DEC-013 |
 
 ---
 
@@ -358,8 +356,8 @@ As questões abaixo permanecem abertas até aprovação explícita. Nenhuma deve
 | DOM-002 | Cardinalidade Fornecedor–Produto: um produto tem um ou múltiplos fornecedores? | RE-12 (filtro por fornecedor) | 1:N — FK em Produto; N:N — tabela associativa | Estrutura do banco; rastreabilidade histórica; complexidade do filtro | — | **CLOSED / ACCEPTED (DEC-009)** |
 | DOM-003 | Como a Movimentação referencia o Fornecedor para permitir filtro? | RE-12 (filtro de movimentações por fornecedor) | (a) Join via Produto; (b) `supplier_id` opcional direto na movimentação | Rastreabilidade histórica se fornecedor do produto mudar; complexidade de JOIN | DOM-002 | **CLOSED / ACCEPTED (DEC-010)** |
 | DOM-004 | Como representar estoque mínimo por produto? Nome, tipo, valor padrão, validações | RE-10 (consulta estoque mínimo) | Campo `estoque_minimo` em Produto; global fixo; parâmetro na query | Impossibilidade da consulta sem valor de referência | — | **CLOSED / ACCEPTED (DEC-011)** |
-| DOM-005 | `quantidade_em_estoque` pode ser alterada diretamente no CRUD de Produto após criação? | RE-07 (movimentação atualiza estoque); auditoria | (A) Livre no CRUD; (B) Somente via movimentações; (C) Ajuste de inventário como tipo especial | Integridade e rastreabilidade do histórico | — | **OPEN** |
-| DOM-006 | Como representar o estoque inicial de um produto recém-cadastrado? | RE-01 (campo `quantidade_em_estoque`) | (1) Campo direto na criação sem movimentação; (2) Sempre zero + movimentação manual; (3) Campo gera movimentação automática | Auditoria; UX da API; consistência | DOM-005 | **OPEN** |
+| DOM-005 | `quantidade_em_estoque` pode ser alterada diretamente no CRUD de Produto após criação? | RE-07 (movimentação atualiza estoque); auditoria | (A) Livre no CRUD; (B) Somente via movimentações; (C) Ajuste de inventário como tipo especial | Integridade e rastreabilidade do histórico | — | **CLOSED / ACCEPTED (DEC-012)** |
+| DOM-006 | Como representar o estoque inicial de um produto recém-cadastrado? | RE-01 (campo `quantidade_em_estoque`) | (1) Campo direto na criação sem movimentação; (2) Sempre zero + movimentação manual; (3) Campo gera movimentação automática | Auditoria; UX da API; consistência | DOM-005 | **CLOSED / ACCEPTED (DEC-013)** |
 | DOM-007 | O que acontece ao excluir um Produto que possui movimentações? | RE-05/RE-06 (imutabilidade); auditoria | RESTRICT; CASCADE (destrói histórico); SET NULL; soft delete | Preservação do histórico de auditoria | — | **OPEN** |
 | DOM-008 | O que acontece ao excluir um Fornecedor relacionado a produtos ou movimentações? | RE-12 (filtro por fornecedor); integridade | RESTRICT; SET NULL; soft delete | Rastreabilidade histórica; integridade do filtro por fornecedor | DOM-003 | **OPEN** |
 | DOM-009 | Como representar o tipo entrada/saída na Movimentação? | RE-04 (campo `tipo`) | Enum de banco; VARCHAR com CHECK; booleano | Clareza semântica; portabilidade entre SGBDs | — | **OPEN** |
@@ -380,8 +378,8 @@ A ordem abaixo respeita as dependências entre as decisões. Decisões anteriore
 | **Resolvido** | **DOM-002** | **Define se haverá FK simples ou tabela associativa entre Produto e Fornecedor** |
 | **Resolvido** | **DOM-003** | **Depende de DOM-002; define o modelo de rastreabilidade do fornecedor na movimentação** |
 | **Resolvido** | **DOM-004** | **Define campo adicional em Produto; necessário para a consulta de estoque mínimo** |
-| 5 | DOM-005 | Define regra central de negócio para o CRUD de Produto |
-| 6 | DOM-006 | Depende de DOM-005; define o comportamento da criação do produto com estoque |
+| **Resolvido** | **DOM-005** | **Define regra central de negócio para o CRUD de Produto** |
+| **Resolvido** | **DOM-006** | **Depende de DOM-005; define o comportamento da criação do produto com estoque** |
 | 7 | DOM-009 | Define o campo `tipo` no modelo de movimentação |
 | 8 | DOM-010 | Define o campo `data` no modelo de movimentação |
 | 9 | DOM-011 | Define validação de quantidade na movimentação |
@@ -590,6 +588,12 @@ O `supplier_id` do Produto é atualizado para o novo fornecedor. Movimentações
 **O que supplier_id significa numa movimentação de saída?**
 Não significa que o fornecedor "causou" ou participou da saída, mas sim que ele era o fornecedor cadastral histórico do produto naquele momento da movimentação.
 
+**Por que a quantidade_em_estoque não é calculada em tempo real (on-the-fly) pelas movimentações?**
+Porque o domínio conceitual exige que ela seja uma propriedade do Produto (RE-01) e persista seu valor para eficiência. Calcular em tempo real para toda listagem prejudicaria a performance de consultas. A consistência é mantida atualizando o saldo persistido exclusivamente através de movimentações (DEC-012).
+
+**Por que não permitimos informar um saldo inicial não-zero ao criar o produto?**
+Para evitar criação de saldo "fantasma" sem origem auditável e para não gerar forte acoplamento no domínio (criação de Produto disparando criação automática de Movimentação oculta). Com saldo inicial zero, toda adição (inclusive a primeira) segue a exata mesma regra e origem: uma movimentação explícita de entrada pelo cliente (DEC-013).
+
 > Respostas adicionais sobre políticas de exclusão e outras regras de negócio serão acrescentadas conforme as decisões DOM restantes forem resolvidas.
 
 ---
@@ -602,7 +606,8 @@ Não significa que o fornecedor "causou" ou participou da saída, mas sim que el
 | v0.2 | TSK-2.1B — Documentação formal da análise em DOMAIN_MODELING.md | CONCLUÍDO |
 | v0.3 | TSK-2.2 — Resolução de DOM-001 a DOM-003 (relacionamentos centrais, MER parcial, primeiro DER parcial) | CONCLUÍDO |
 | v0.4 | TSK-2.3 — Resolução de DOM-004 (estoque mínimo) | CONCLUÍDO |
-| v0.5 | MER aprovado com cardinalidades definidas | PENDENTE |
-| v0.6 | DER em Mermaid versionado | PENDENTE |
-| v0.7 | Modelo relacional mapeado | PENDENTE |
-| v0.8 | Modelo físico PostgreSQL definido (TSK-2.4) | PENDENTE |
+| v0.5 | TSK-2.3 — Resolução de DOM-005 e DOM-006 (quantidade em estoque e saldo inicial) | CONCLUÍDO |
+| v0.6 | MER aprovado com cardinalidades definidas | PENDENTE |
+| v0.7 | DER em Mermaid versionado | PENDENTE |
+| v0.8 | Modelo relacional mapeado | PENDENTE |
+| v0.9 | Modelo físico PostgreSQL definido (TSK-2.4) | PENDENTE |

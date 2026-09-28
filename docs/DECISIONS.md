@@ -485,6 +485,76 @@ Resolução: ver DEC-011.
 
 ---
 
+## DEC-012 — Controle de quantidade_em_estoque
+
+Status: ACCEPTED
+
+### Contexto
+
+O desafio exige que a movimentação de estoque reflita automaticamente na quantidade disponível do produto. Além disso, as movimentações representam registros de auditoria imutáveis. Era preciso definir como a `quantidade_em_estoque` seria mantida e alterada no sistema.
+
+### Opções consideradas
+
+1. **Alteração livre no CRUD:** O cliente pode atualizar a `quantidade_em_estoque` livremente via endpoint `PUT/PATCH` em Produto.
+2. **Atualização exclusiva via Movimentação:** A quantidade_em_estoque não pode ser alterada diretamente pelo CRUD, toda e qualquer alteração de saldo exige a criação de uma movimentação correspondente.
+
+### Decisão
+
+A `quantidade_em_estoque` pertence a Produto e representa o saldo atual persistido.
+
+Sua atualização será **exclusiva via Movimentação**. Não poderá ser alterada diretamente pelo CRUD de Produto.
+A criação da Movimentação e a atualização do saldo deverão futuramente ocorrer na mesma transação. (Não implementar essa transação agora).
+
+### Justificativa
+
+- Preservar a rastreabilidade integral.
+- Evitar alterações de saldo sem histórico associado.
+- Manter responsabilidades separadas: Produto cadastra o item; Movimentação altera o estoque.
+
+### Consequências
+
+- O modelo não usará cálculo em tempo real a cada consulta, o saldo é de fato persistido e cacheado na entidade Produto.
+- Endpoints de criação/edição de Produto não poderão alterar o estoque livremente.
+
+---
+
+## DEC-013 — Estoque inicial
+
+Status: ACCEPTED
+
+### Contexto
+
+No momento da criação de um novo Produto, era necessário determinar como o estoque inicial do item seria registrado, respeitando a regra de que o saldo deve sempre corresponder ao histórico de movimentações.
+
+### Opções consideradas
+
+1. **Estoque livre na criação:** O cliente informa uma quantidade inicial e o Produto nasce com esse saldo (sem movimentação associada).
+2. **Movimentação automática:** O cliente informa o saldo inicial no momento de criação do Produto, e a API automaticamente gera uma Movimentação de entrada.
+3. **Estoque inicial sempre zero:** Todo Produto é criado com quantidade_em_estoque = 0. Para adicionar estoque inicial, o cliente deve posteriormente criar uma Movimentação explícita.
+
+### Decisão
+
+**Estoque inicial sempre zero.**
+
+- Todo Produto é criado com `quantidade_em_estoque = 0`.
+- O cliente não informa livremente um estoque inicial no cadastro.
+- Para adicionar estoque inicial, deve criar posteriormente uma Movimentação do tipo entrada.
+- Criação de Produto NÃO gera Movimentação automaticamente.
+- Produto com estoque zero é um estado válido.
+
+### Justificativa
+
+- Evitar efeitos colaterais ocultos na criação de Produto (criar movimentações implicitamente).
+- Manter a implementação e defesa simples.
+- Consolidar a regra de que *toda alteração* de estoque (inclusive a primeira) tem a exata mesma forma e origem.
+
+### Consequências
+
+- O campo `quantidade_em_estoque` terá valor inicial zero na criação de um produto.
+- Fluxos de negócio que exigem cadastrar e já dar entrada no item precisarão de duas requisições na API.
+
+---
+
 ## PEND-005 — SQLAlchemy síncrono ou assíncrono
 
 Status: PROPOSED
