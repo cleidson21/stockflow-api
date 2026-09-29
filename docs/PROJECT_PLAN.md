@@ -195,12 +195,12 @@ Período planejado: 27/09 a 29/09.
 
 ### TSK-2.7 — SQLAlchemy
 
-- [ ] Entender ORM.
-- [ ] Discutir abordagem síncrona versus assíncrona.
-- [ ] Escolher abordagem adequada à escala do desafio.
-- [ ] Configurar engine.
-- [ ] Configurar sessões.
-- [ ] Validar conexão.
+- [x] Entender ORM.
+- [x] Discutir abordagem síncrona versus assíncrona.
+- [x] Escolher abordagem adequada à escala do desafio.
+- [x] Configurar engine.
+- [x] Configurar sessões.
+- [x] Validar conexão.
 
 ### TSK-2.8 — Alembic
 

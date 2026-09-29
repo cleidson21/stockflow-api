@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import urllib.parse
+from sqlalchemy.engine import URL
 
 class Settings(BaseSettings):
     db_host: str
@@ -11,10 +11,14 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @property
-    def database_url(self) -> str:
-        safe_password = urllib.parse.quote(self.db_password, safe="")
-        safe_user = urllib.parse.quote(self.db_user, safe="")
-        # Utiliza apenas "postgresql" conceitualmente pois o driver final (ex: psycopg/asyncpg) ainda não foi escolhido
-        return f"postgresql://{safe_user}:{safe_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+    def database_url(self) -> URL:
+        return URL.create(
+            drivername="postgresql+psycopg",
+            username=self.db_user,
+            password=self.db_password,
+            host=self.db_host,
+            port=self.db_port,
+            database=self.db_name
+        )
 
 settings = Settings()

@@ -1173,7 +1173,7 @@ O lock pessimista (`FOR UPDATE`) torna o fluxo explícito, unitário e fácil de
 
 ## PEND-005 — SQLAlchemy síncrono ou assíncrono
 
-Status: PROPOSED
+Status: SUPERSEDED (ver DEC-033)
 
 Questão:
 
@@ -1258,6 +1258,39 @@ Essa abordagem segue os princípios do "12-Factor App", mantendo a configuraçã
 - A configuração ainda não resolveu a escolha do motor assíncrono vs síncrono.
 
 ---
+
+---
+
+## DEC-033 — Abordagem SQLAlchemy síncrona e driver PostgreSQL
+
+Status: ACCEPTED
+
+### Contexto
+
+Precisamos instanciar o framework ORM e definir a abordagem do motor do banco de dados (Síncrono vs Assíncrono). Esta decisão resolve a pendência arquitetural descrita em PEND-005.
+
+### Decisão
+
+O StockFlow adotará a abordagem **Síncrona** utilizando o SQLAlchemy 2.x e o driver `psycopg` (Psycopg 3).
+
+### Alternativas Consideradas
+
+- **Síncrona (Adotada):** Utiliza `create_engine` padrão e `sessionmaker`.
+- **Assíncrona:** Utilizaria `AsyncEngine`, `AsyncSession`, `asyncpg` e fluxo de `await` de ponta a ponta na persistência de dados. A abordagem assíncrona traria benefícios para I/O massivamente concorrente, mas também exigiria uma mudança de paradigma significativa para testes e compreensão do fluxo transacional.
+
+### Justificativa
+
+- A abordagem síncrona é mais simples de entender, documentar e defender na defesa técnica.
+- O escopo e a escala do desafio acadêmico atual não justificam o overhead de complexidade de uma arquitetura assíncrona.
+- A quantidade de novos conceitos (`await`, gerenciamento de AsyncSession) diminui a clareza para este caso de uso.
+- A natureza transacional explícita com bloqueios pessimistas (`SELECT ... FOR UPDATE`, commit, rollback) combina naturalmente com funções síncronas lineares.
+- O FastAPI suporta endpoints síncronos de maneira transparente usando pools de threads nativos, não travando o event loop.
+
+### Consequências
+
+- Utilizamos pacotes `SQLAlchemy>=2.0` e `psycopg[binary]`.
+- A engine e a `Session` (e eventuais endpoints que dependam diretamente da sessão) não precisarão das diretivas `async` / `await`.
+- A arquitetura ganha clareza, perdendo apenas o teto máximo de concorrência I/O, o que é plenamente aceitável. Poderemos reavaliar e refatorar futuramente se surgirem requisitos de escala concretos que engarrafem as threads de serviço síncronas.
 
 ## Regra para novas decisões
 
