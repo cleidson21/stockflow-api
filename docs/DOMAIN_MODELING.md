@@ -631,7 +631,6 @@ A representação dos dados no SGBD PostgreSQL está definida abaixo. Constraint
 
 ### Pendentes (Modelo Físico)
 - Estratégia de concorrência.
-- Timezone operacional.
 - Implementação SQLAlchemy/Alembic.
 - Migrations.
 
@@ -655,12 +654,25 @@ Por exemplo:
 | Fornecedor | email | UNIQUE | Restrição de unicidade | Índice automático no PostgreSQL. |
 | Produto | id | PK | Identificador único | Índice automático no PostgreSQL. |
 | Produto | sku | UNIQUE | Restrição de unicidade | Índice automático no PostgreSQL. |
-| Produto | categoria_id | Adicional | JOINs e Listagens | Localização eficiente, e verificação de integridade na exclusão da categoria. |
-| Produto | fornecedor_id | Adicional | JOINs e Listagens | Localização eficiente, e verificação de integridade na exclusão do fornecedor. |
+| Produto | categoria_id | Adicional | JOINs e Listagens | Desempenho de JOINs e operações referenciais. A FK funciona sem índice. |
+| Produto | fornecedor_id | Adicional | JOINs e Listagens | Desempenho de JOINs e operações referenciais. A FK funciona sem índice. |
 | Movimentacao_Estoque | id | PK | Identificador único | Índice automático no PostgreSQL. |
-| Movimentacao_Estoque | produto_id | Adicional | JOINs e Listagens | Localização eficiente, e verificação de integridade na exclusão do produto. |
+| Movimentacao_Estoque | produto_id | Adicional | JOINs e Listagens | Desempenho de JOINs e operações referenciais. A FK funciona sem índice. |
 | Movimentacao_Estoque | data | Adicional | Filtros de busca | Filtragem obrigatória por período isolado. |
 | Movimentacao_Estoque | fornecedor_id, data | Adicional | Filtros de busca | Filtragem obrigatória apenas por fornecedor, ou fornecedor com período (aproveitando o prefixo à esquerda). |
+
+### Política de Timezone e TIMESTAMPTZ
+
+O tipo físico `TIMESTAMPTZ` (usado em `Produto.data_cadastro` e `Movimentacao_Estoque.data`) representa um instante absoluto no tempo. O PostgreSQL não preserva em cada valor o nome do timezone original informado pelo cliente. Por exemplo, `2026-09-29 14:00:00-03:00` e `2026-09-29 17:00:00+00:00` representam exatamente o mesmo instante.
+
+Como política operacional do StockFlow:
+- **UTC** será a referência temporal operacional interna para evitar ambiguidades.
+- Os campos que representam instantes permanecem `TIMESTAMPTZ`.
+- O backend deverá trabalhar futuramente apenas com datetimes *timezone-aware* (cientes de fuso horário).
+- Timestamps não devem ser tratados como datetimes ingênuos (*naive*).
+- A data/hora da Movimentação continua sendo determinada pelo sistema (`DEFAULT CURRENT_TIMESTAMP`), o cliente não possui esse valor como campo livre de criação, e não há regras de retroatividade alteradas.
+- Filtros temporais futuros deverão comparar instantes de maneira *timezone-aware*.
+- A conversão para o timezone local do usuário pertence à camada de apresentação/contexto da API. Não armazenaremos o timezone local do usuário como um atributo separado nesta versão.
 
 ---
 
@@ -802,7 +814,7 @@ Porque a consistência histórica do estoque e a auditoria de movimentações s�
 Não. O PostgreSQL não cria automaticamente índices nas colunas que referenciam uma chave estrangeira. Eles precisam ser adicionados manualmente.
 
 **Por que indexamos categoria_id e fornecedor_id de Produto?**
-Para suportar os JOINs naturais, consultas pelas relações e verificações eficientes de integridade referencial nas exclusões restritas.
+Para suportar os JOINs naturais, consultas pelas relações e verificações eficientes nas exclusões restritas. A FK funciona perfeitamente sem índice, mas os índices foram aprovados pelo desempenho dos padrões de acesso, JOINs e operações referenciais.
 
 **Por que existe índice composto (fornecedor_id, data)?**
 Para atender o filtro apenas por fornecedor e o filtro por fornecedor combinado com intervalo de data. A ordem importa para aproveitar a regra de prefixo à esquerda.
@@ -824,6 +836,9 @@ Custo de armazenamento, custo de INSERT, UPDATE e DELETE, além do esforço de m
 
 **Como validar futuramente se um índice realmente ajuda?**
 Por meio da análise do plano de execução utilizando as ferramentas `EXPLAIN` e `EXPLAIN ANALYZE`.
+
+**Qual o comportamento do TIMESTAMPTZ e por que adotamos UTC?**
+O `TIMESTAMPTZ` armazena um instante absoluto no tempo. O PostgreSQL não preserva o timezone original do cliente no armazenamento. Por exemplo, `2026-09-29 14:00:00-03:00` e `2026-09-29 17:00:00+00:00` representam o mesmíssimo instante. Adotar o UTC como referência operacional interna evita qualquer ambiguidade nas comparações e no armazenamento, delegando a formatação do fuso horário local para a apresentação da API.
 
 ---
 

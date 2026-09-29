@@ -1090,6 +1090,42 @@ O índice composto `(fornecedor_id, data)` aproveita eficientemente o prefixo à
 
 ---
 
+## DEC-030 — Política Operacional de Timezone
+
+Status: ACCEPTED
+
+### Contexto
+
+O banco de dados utilizará o tipo físico `TIMESTAMPTZ` para campos que representam um instante temporal (`Produto.data_cadastro` e `Movimentacao_Estoque.data`). Era necessário estabelecer uma política consistente para lidar com datas e horários entre a aplicação e o banco, a fim de evitar ambiguidades em filtros históricos, ordenações e registros de auditoria.
+
+### Opções consideradas
+
+1. Armazenar um campo separado para o fuso horário (timezone) do usuário.
+2. Utilizar datetimes *naive* (ingênuos) assumindo implicitamente que são todos da mesma região.
+3. Usar UTC como referência operacional interna, tratando fuso horário apenas na camada de apresentação/API.
+
+### Decisão
+
+A política temporal operacional será:
+- UTC será a referência temporal operacional interna em todo o backend.
+- Os campos que representam instantes absolutos permanecem como `TIMESTAMPTZ`.
+- O backend trabalhará futuramente apenas com datetimes *timezone-aware* (cientes de fuso horário). Datetimes ingênuos não serão tratados como timestamps válidos.
+- A conversão para o timezone local do usuário pertencerá unicamente à apresentação/contexto da API (frontend ou formatação de resposta).
+- O timezone local não será armazenado como um atributo separado nesta versão.
+
+Para as movimentações de estoque, a data/hora continua sendo determinada pelo sistema (`DEFAULT CURRENT_TIMESTAMP`), o cliente não informa o valor e regras de retroatividade seguem inalteradas.
+
+### Justificativa
+
+O `TIMESTAMPTZ` no PostgreSQL não preserva o nome do timezone original (apenas armazena o instante absoluto convertido para UTC). Um instante absoluto é o mesmo em qualquer lugar do mundo (ex: `2026-09-29 14:00:00-03:00` é idêntico a `2026-09-29 17:00:00+00:00`). Adotar o UTC como referência operacional backend elimina ambiguidades, garantindo que ordenações e cálculos de período funcionem corretamente independente da configuração regional do servidor ou da conexão do banco. Tratar a conversão apenas na camada de apresentação respeita a separação de responsabilidades.
+
+### Consequências
+
+- Futuros filtros por período deverão comparar os instantes de maneira *timezone-aware*.
+- A configuração da aplicação (Python/FastAPI) e dos schemas (Pydantic) precisará garantir que os dados trafegados e processados respeitem o formato com timezone explícito (como ISO-8601 com sufixo `Z` ou offset).
+
+---
+
 ## PEND-005 — SQLAlchemy síncrono ou assíncrono
 
 Status: PROPOSED
