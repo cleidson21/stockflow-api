@@ -1229,6 +1229,36 @@ Resolução: A estratégia formalizada é o lock pessimista (`SELECT FOR UPDATE`
 
 ---
 
+## DEC-032 — Estratégia de configuração e variáveis de ambiente
+
+Status: ACCEPTED
+
+### Contexto
+
+Como a aplicação será conectada ao banco de dados e como as credenciais serão gerenciadas de maneira segura antes de prosseguir com a implementação do ORM (SQLAlchemy).
+
+### Decisão
+
+A configuração da aplicação usará variáveis de ambiente através da biblioteca `pydantic-settings`.
+
+- Os componentes da conexão com o banco (Host, Porta, Nome, Usuário, Senha) serão injetados por variáveis separadas (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`).
+- As configurações locais (para desenvolvimento) serão carregadas de um arquivo `.env` (ignorado pelo Git).
+- Um arquivo `.env.example` versionável proverá a documentação dos campos e valores seguros de fallback (`CHANGE_ME` para a senha).
+- A aplicação construirá a connection string PostgreSQL de forma segura usando esses componentes separadamente na inicialização, escapando caracteres especiais.
+- A escolha do driver específico (`psycopg`, `asyncpg`, etc.) permanece postergada (TSK-2.7). A connection string usará a representação conceitual base (`postgresql://`).
+
+### Justificativa
+
+Essa abordagem segue os princípios do "12-Factor App", mantendo a configuração separada do código e blindando senhas e dados sensíveis de vazamentos no versionamento. O uso do Pydantic simplifica a validação, parse de tipos fortes e fornece uma abstração limpa de tipagem. A divisão dos campos em componentes separados em vez de uma única `DATABASE_URL` permite fácil auditoria individual de falhas e mais clareza sem vazamento acidental da senha completa nos logs.
+
+### Consequências
+
+- A inicialização do banco depende da classe `Settings` do módulo `app/config.py`.
+- O SQLAlchemy ainda não está configurado.
+- A configuração ainda não resolveu a escolha do motor assíncrono vs síncrono.
+
+---
+
 ## Regra para novas decisões
 
 Quando uma decisão pendente for resolvida:

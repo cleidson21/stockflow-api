@@ -188,10 +188,10 @@ Período planejado: 27/09 a 29/09.
 
 ### TSK-2.6 — Configuração da aplicação
 
-- [ ] Definir estratégia de variáveis de ambiente.
-- [ ] Criar exemplo seguro de configuração.
-- [ ] Configurar URL do banco.
-- [ ] Entender cada componente da connection string.
+- [x] Definir estratégia de variáveis de ambiente.
+- [x] Criar exemplo seguro de configuração.
+- [x] Configurar URL do banco.
+- [x] Entender cada componente da connection string.
 
 ### TSK-2.7 — SQLAlchemy
 
