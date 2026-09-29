@@ -180,11 +180,11 @@ Período planejado: 27/09 a 29/09.
 
 ### TSK-2.5 — PostgreSQL
 
-- [ ] Verificar instalação/disponibilidade do PostgreSQL.
-- [ ] Criar banco de desenvolvimento.
-- [ ] Criar usuário/configuração necessária.
-- [ ] Manter credenciais fora do Git.
-- [ ] Validar conexão manualmente.
+- [x] Verificar instalação/disponibilidade do PostgreSQL.
+- [x] Criar banco de desenvolvimento.
+- [x] Criar usuário/configuração necessária.
+- [x] Manter credenciais fora do Git.
+- [x] Validar conexão manualmente.
 
 ### TSK-2.6 — Configuração da aplicação
 
