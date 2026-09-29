@@ -1126,6 +1126,51 @@ O `TIMESTAMPTZ` no PostgreSQL não preserva o nome do timezone original (apenas 
 
 ---
 
+## DEC-031 — Estratégia Transacional e Controle de Concorrência das Movimentações
+
+Status: ACCEPTED
+
+### Contexto
+Se duas ou mais requisições tentarem movimentar o estoque do mesmo Produto simultaneamente (*race condition*), elas podem ler o mesmo saldo base obsoleto e aprovar saídas que resultariam em estoque negativo, ou sobrescrever o saldo incorretamente. Era necessário definir como garantir a consistência sob concorrência.
+
+### Alternativas consideradas
+1. **UPDATE condicional atômico**: `UPDATE produto SET quantidade_em_estoque = quantidade_em_estoque - quantidade WHERE id = produto_id AND quantidade_em_estoque >= quantidade RETURNING ...`. Evita a race condition de forma efetiva.
+2. **PostgreSQL SERIALIZABLE / REPEATABLE READ**: Elevar o nível de isolamento transacional para lidar globalmente com as leituras repetíveis e escritas concorrentes.
+3. **Lock Pessimista (FOR UPDATE)**: Travar explicitamente a linha do Produto para leitura e atualização exclusivas.
+
+### Decisão
+Toda criação de Movimentação ocorrerá dentro de **UMA única transação**. 
+A unidade de concorrência será a **linha do Produto**.
+A linha do Produto afetado será obtida com bloqueio pessimista: `SELECT ... FOR UPDATE` aliado ao isolamento padrão `READ COMMITTED` do PostgreSQL.
+
+A fronteira transacional será:
+`BEGIN`
+1. Localizar Produto pelo id com `FOR UPDATE`. Se não existir, interromper.
+2. Ler `quantidade_em_estoque` e `fornecedor_id`.
+3. Validar a Movimentação (Para saída: `quantidade <= saldo atual`. Se faltar saldo, interromper sem alterar nada e sem criar Movimentação).
+4. Calcular novo saldo.
+5. Atualizar `quantidade_em_estoque` do Produto.
+6. Criar a `MOVIMENTACAO_ESTOQUE` capturando o fornecedor histórico do Produto bloqueado.
+`COMMIT` (ou `ROLLBACK` em caso de falha após o BEGIN).
+
+Entradas e saídas utilizarão a mesma mecânica de bloqueio.
+
+### Justificativa
+O lock pessimista (`FOR UPDATE`) torna o fluxo explícito, unitário e fácil de compreender. Precisamos ler o saldo atual e o `fornecedor_id` cadastral do produto de maneira sincronizada antes da criação. Esse bloqueio explícito resolve a concorrência perfeitamente junto ao isolamento padrão `READ COMMITTED`, sem necessitar de *retry loops* ou a sobrecarga global de `SERIALIZABLE`. A alternativa por `UPDATE` atômico direto foi considerada, porém optou-se pelo `FOR UPDATE` para utilizar o mesmo caminho lógico visível tanto para entradas quanto saídas e expor de maneira muito clara a unidade crítica de lock no código.
+
+### Consequências
+- A aplicação serializará requisições simultâneas para o **mesmo Produto** no nível do banco (uma aguarda a liberação da linha enquanto a outra processa).
+- Transações de **Produtos diferentes** prosseguirão em paralelo normalmente (escopo do lock reduzido à linha).
+- A imutabilidade é garantida.
+- Fornecedor histórico inserido na Movimentação estará perfeitamente sincronizado com o Produto atual.
+- O risco de *deadlock* é baixo pois as movimentações travam apenas uma única linha de Produto por vez.
+
+### Limitações
+- Não definimos nem implementaremos *retry* automático, timeout customizado ou *recovery* de deadlock. Só serão considerados se absolutamente necessários nos testes práticos.
+- O mapeamento de erros HTTP desta fronteira (400, 404, 409, 422) será definido na etapa respectiva.
+
+---
+
 ## PEND-005 — SQLAlchemy síncrono ou assíncrono
 
 Status: PROPOSED
@@ -1166,7 +1211,7 @@ A decisão deve ser tomada antes da consolidação dos exception handlers.
 
 ## PEND-008 — Estratégia de concorrência
 
-Status: PROPOSED
+Status: SUPERSEDED por DEC-031
 
 Questão:
 
@@ -1179,6 +1224,8 @@ Possibilidades a estudar:
 - atualização atômica condicionada.
 
 A decisão somente será aceita após entendimento do problema de race condition.
+
+Resolução: A estratégia formalizada é o lock pessimista (`SELECT FOR UPDATE`) focado na linha do Produto (unidade de lock), operando em `READ COMMITTED`. Detalhes em DEC-031.
 
 ---
 

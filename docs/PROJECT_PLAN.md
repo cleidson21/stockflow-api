@@ -442,11 +442,11 @@ Período planejado: 11/10 a 13/10.
 
 ### TSK-7.3 — Concorrência
 
-- [ ] Reproduzir conceitualmente a race condition.
-- [ ] Entender lock pessimista.
-- [ ] Entender lock otimista.
-- [ ] Analisar estratégia apropriada.
-- [ ] Registrar decisão antes da implementação.
+- [x] Reproduzir conceitualmente a race condition.
+- [x] Entender lock pessimista.
+- [x] Entender lock otimista.
+- [x] Analisar estratégia apropriada.
+- [x] Registrar decisão antes da implementação.
 - [ ] Implementar controle de concorrência.
 - [ ] Testar saídas simultâneas.
 - [ ] Confirmar impossibilidade de estoque negativo.

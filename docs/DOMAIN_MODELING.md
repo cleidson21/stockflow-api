@@ -630,7 +630,6 @@ A representação dos dados no SGBD PostgreSQL está definida abaixo. Constraint
 - **Bloqueio de estoque inicial:** Apesar do `DEFAULT 0` no banco, a API deve proibir qualquer envio manual de `quantidade_em_estoque` no cadastro.
 
 ### Pendentes (Modelo Físico)
-- Estratégia de concorrência.
 - Implementação SQLAlchemy/Alembic.
 - Migrations.
 
@@ -673,6 +672,23 @@ Como política operacional do StockFlow:
 - A data/hora da Movimentação continua sendo determinada pelo sistema (`DEFAULT CURRENT_TIMESTAMP`), o cliente não possui esse valor como campo livre de criação, e não há regras de retroatividade alteradas.
 - Filtros temporais futuros deverão comparar instantes de maneira *timezone-aware*.
 - A conversão para o timezone local do usuário pertence à camada de apresentação/contexto da API. Não armazenaremos o timezone local do usuário como um atributo separado nesta versão.
+
+### Estratégia Transacional e de Concorrência
+
+Para evitar problemas de *race condition* na atualização de estoques, o sistema adotará um fluxo transacional com bloqueio pessimista focado na linha do Produto (unidade de concorrência). A estratégia utiliza `SELECT ... FOR UPDATE` juntamente com o nível de isolamento padrão `READ COMMITTED` do PostgreSQL.
+
+**Fluxo transacional aprovado:**
+`BEGIN`
+1. Localizar o Produto pelo id utilizando bloqueio `FOR UPDATE`.
+2. Interromper a operação se o Produto não existir.
+3. Ler o saldo atual (`quantidade_em_estoque`) e fornecedor atual (`fornecedor_id`) da linha bloqueada.
+4. Validar a Movimentação. Para SAÍDA: verificar se `quantidade <= saldo_atual`. Se não houver saldo, interromper sem criar Movimentação e sem alterar o Produto.
+5. Calcular o novo saldo.
+6. Atualizar a `quantidade_em_estoque` na tabela Produto.
+7. Criar a `MOVIMENTACAO_ESTOQUE` contendo os dados, incluindo o fornecedor histórico recém capturado da linha bloqueada.
+`COMMIT` (Qualquer falha após o BEGIN resulta em `ROLLBACK`).
+
+A atomicidade deste bloco transacional é essencial, garantindo que o saldo e o histórico não divirjam (tudo ou nada). O isolamento (`READ COMMITTED` em conjunto com `FOR UPDATE`) garante que duas requisições concorrentes para o mesmo produto sejam serializadas no SGBD, aguardando a liberação do lock. Operações em Produtos diferentes correm em paralelo.
 
 ---
 
@@ -802,7 +818,7 @@ Porque conceitualmente um produto nasce zerado. O `DEFAULT 0` formaliza isso no 
 Não. Ele é usado apenas quando o campo é omitido no `INSERT`. Para proibir que o cliente especifique outro valor, a aplicação (API) deve travar o envio da variável no contrato da rota de criação.
 
 **Por que a regra de estoque insuficiente não é um CHECK simples?**
-Porque um check estático nativo do PostgreSQL valida dados isolados da própria linha. A regra será garantida pela operação transacional de movimentação. A estratégia concreta de controle de concorrência permanece pendente.
+Porque um check estático nativo do PostgreSQL valida dados isolados da própria linha. A regra será garantida pela operação transacional de movimentação com bloqueio pessimista focado na linha do Produto.
 
 **O CHECK do CNPJ valida o CNPJ completo?**
 Não, valida apenas o formato de tamanho 14 e uso exclusivo de numerais. A validação matemática do dígito verificador, segundo as diretrizes de escopo, pertence à aplicação, evitando triggers ou PL/pgSQL e isolando as regras de negócio no backend.
@@ -839,6 +855,39 @@ Por meio da análise do plano de execução utilizando as ferramentas `EXPLAIN` 
 
 **Qual o comportamento do TIMESTAMPTZ e por que adotamos UTC?**
 O `TIMESTAMPTZ` armazena um instante absoluto no tempo. O PostgreSQL não preserva o timezone original do cliente no armazenamento. Por exemplo, `2026-09-29 14:00:00-03:00` e `2026-09-29 17:00:00+00:00` representam o mesmíssimo instante. Adotar o UTC como referência operacional interna evita qualquer ambiguidade nas comparações e no armazenamento, delegando a formatação do fuso horário local para a apresentação da API.
+
+**O que é race condition no estoque?**
+É a falha que ocorre quando duas requisições tentam ler e atualizar o saldo simultaneamente, resultando em leitura de dados obsoletos, sobrescritas ou saídas acima do saldo disponível.
+
+**Por que apenas validar saldo antes de atualizar não basta?**
+Porque entre o momento da leitura/validação e a escrita real, uma segunda transação simultânea pode ter consumido o saldo, invalidando a premissa original da primeira.
+
+**O que SELECT FOR UPDATE faz?**
+Adquire um lock pessimista na(s) linha(s) afetada(s). Nenhuma outra transação poderá atualizar a mesma linha (ou aplicar `FOR UPDATE` nela) até que a primeira execute COMMIT ou ROLLBACK.
+
+**Por que o lock é feito no Produto?**
+Porque a tabela Produto contém o recurso compartilhado sob disputa (o saldo `quantidade_em_estoque`). Ele representa a unidade natural de concorrência.
+
+**Duas Movimentações de Produtos diferentes se bloqueiam?**
+Não. O lock atua em nível de linha (row-level lock) na tabela Produto. Fluxos afetando IDs diferentes correm em paralelo perfeitamente.
+
+**Por que entrada também usa o lock?**
+Garante um caminho algorítmico único e evita ambiguidades em cenários onde entradas e saídas concorrem simultaneamente, mantendo consistência absoluta para aquele produto.
+
+**Qual a diferença entre transação e lock?**
+A transação (garantida com BEGIN e COMMIT/ROLLBACK) assegura a *atomicidade* (tudo falha ou tudo passa). O lock (`FOR UPDATE`) controla o *isolamento/concorrência* de acessos aos mesmos dados no intervalo de tempo dessa transação.
+
+**Por que READ COMMITTED é suficiente junto com FOR UPDATE?**
+READ COMMITTED é o padrão no PostgreSQL. O bloqueio `FOR UPDATE` paralisa transações conflitantes e força a segunda a re-ler o estado da linha após o COMMIT da primeira. O problema é sanado sem necessitar isolamento superior global.
+
+**O que acontece se a criação da Movimentação falhar depois de alterar o saldo?**
+O banco de dados efetuará o ROLLBACK. Nenhuma modificação persistirá.
+
+**Por que não escolhemos SERIALIZABLE?**
+Exigiria que a aplicação tratasse constantemente falhas de serialização (*retry loops*) e imporia overhead global. A solução focada com bloqueio pessimista é mais simples e resolve cirurgicamente a concorrência do estoque.
+
+**Qual alternativa atômica foi considerada?**
+O UPDATE condicional atômico (`UPDATE ... SET qtd = qtd - X WHERE qtd >= X`). É plenamente válido, mas optamos por `FOR UPDATE` por ser um fluxo mais explícito, facilitando a captura correta do `fornecedor_id` e a aplicação uniforme das regras de negócio.
 
 ---
 
