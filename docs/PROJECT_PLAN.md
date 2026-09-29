@@ -176,7 +176,7 @@ Período planejado: 27/09 a 29/09.
 - [x] Definir tipos para quantidades.
 - [x] Definir campos de data/hora.
 - [x] Definir constraints de unicidade.
-- [ ] Avaliar índices necessários.
+- [x] Avaliar índices necessários.
 
 ### TSK-2.5 — PostgreSQL
 

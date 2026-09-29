@@ -630,7 +630,6 @@ A representação dos dados no SGBD PostgreSQL está definida abaixo. Constraint
 - **Bloqueio de estoque inicial:** Apesar do `DEFAULT 0` no banco, a API deve proibir qualquer envio manual de `quantidade_em_estoque` no cadastro.
 
 ### Pendentes (Modelo Físico)
-- Índices de busca adicionais.
 - Estratégia de concorrência.
 - Timezone operacional.
 - Implementação SQLAlchemy/Alembic.
@@ -645,7 +644,23 @@ Por exemplo:
 - Restrições `UNIQUE` (como no CNPJ, SKU) geram automaticamente a necessidade de uma estrutura eficiente para unicidade.
 - O tipo `NUMERIC` foi escolhido para assegurar a exatidão monetária absoluta (prevenindo falhas de arredondamento de float), e não por ser o tipo aritmeticamente mais rápido.
 
-*As definições explícitas de índices adicionais não foram realizadas nesta etapa e serão abordadas de acordo com as consultas obrigatórias.*
+### Índices e Padrões de Acesso
+
+| Tabela | Coluna(s) | Origem | Consulta/uso | Justificativa |
+|---|---|---|---|---|
+| Categoria | id | PK | Identificador único | Índice automático no PostgreSQL. |
+| Categoria | nome | UNIQUE | Restrição de unicidade | Índice automático no PostgreSQL. |
+| Fornecedor | id | PK | Identificador único | Índice automático no PostgreSQL. |
+| Fornecedor | cnpj | UNIQUE | Restrição de unicidade | Índice automático no PostgreSQL. |
+| Fornecedor | email | UNIQUE | Restrição de unicidade | Índice automático no PostgreSQL. |
+| Produto | id | PK | Identificador único | Índice automático no PostgreSQL. |
+| Produto | sku | UNIQUE | Restrição de unicidade | Índice automático no PostgreSQL. |
+| Produto | categoria_id | Adicional | JOINs e Listagens | Localização eficiente, e verificação de integridade na exclusão da categoria. |
+| Produto | fornecedor_id | Adicional | JOINs e Listagens | Localização eficiente, e verificação de integridade na exclusão do fornecedor. |
+| Movimentacao_Estoque | id | PK | Identificador único | Índice automático no PostgreSQL. |
+| Movimentacao_Estoque | produto_id | Adicional | JOINs e Listagens | Localização eficiente, e verificação de integridade na exclusão do produto. |
+| Movimentacao_Estoque | data | Adicional | Filtros de busca | Filtragem obrigatória por período isolado. |
+| Movimentacao_Estoque | fornecedor_id, data | Adicional | Filtros de busca | Filtragem obrigatória apenas por fornecedor, ou fornecedor com período (aproveitando o prefixo à esquerda). |
 
 ---
 
@@ -775,13 +790,40 @@ Porque conceitualmente um produto nasce zerado. O `DEFAULT 0` formaliza isso no 
 Não. Ele é usado apenas quando o campo é omitido no `INSERT`. Para proibir que o cliente especifique outro valor, a aplicação (API) deve travar o envio da variável no contrato da rota de criação.
 
 **Por que a regra de estoque insuficiente não é um CHECK simples?**
-Porque um check estático nativo do PostgreSQL valida dados isolados da própria linha. O saldo disponível depende do estado da tabela `Produto`, exigindo consulta e travamento no momento da movimentação (transação), o que seria ineficiente e acoplado demais se resolvido via database CHECK puro.
+Porque um check estático nativo do PostgreSQL valida dados isolados da própria linha. A regra será garantida pela operação transacional de movimentação. A estratégia concreta de controle de concorrência permanece pendente.
 
 **O CHECK do CNPJ valida o CNPJ completo?**
 Não, valida apenas o formato de tamanho 14 e uso exclusivo de numerais. A validação matemática do dígito verificador, segundo as diretrizes de escopo, pertence à aplicação, evitando triggers ou PL/pgSQL e isolando as regras de negócio no backend.
 
 **Por que a exclusão (de Produto, Categoria ou Fornecedor) usa uma abordagem RESTRICT em vez de CASCADE ou SET NULL?**
 Porque a consistência histórica do estoque e a auditoria de movimentações são prioridades absolutas do domínio. Um `CASCADE` destruiria dados críticos de histórico (ex: apagar uma categoria apagaria produtos, que apagaria o histórico de movimentações). Um `SET NULL` deixaria movimentações ou produtos "órfãos", violando as restrições obrigatórias (ex: todo produto deve ter uma categoria). A regra RESTRICT atua como salvaguarda, garantindo que entidades em uso nunca sejam corrompidas ou apagadas acidentalmente (DEC-018, DEC-019, DEC-020).
+
+**Toda FK possui índice automaticamente no PostgreSQL?**
+Não. O PostgreSQL não cria automaticamente índices nas colunas que referenciam uma chave estrangeira. Eles precisam ser adicionados manualmente.
+
+**Por que indexamos categoria_id e fornecedor_id de Produto?**
+Para suportar os JOINs naturais, consultas pelas relações e verificações eficientes de integridade referencial nas exclusões restritas.
+
+**Por que existe índice composto (fornecedor_id, data)?**
+Para atender o filtro apenas por fornecedor e o filtro por fornecedor combinado com intervalo de data. A ordem importa para aproveitar a regra de prefixo à esquerda.
+
+**Por que ainda existe índice isolado em data?**
+Porque o índice composto (fornecedor_id, data) não substitui adequadamente a busca isolada pelo período. Consultas apenas por período precisam de um índice próprio em data.
+
+**O índice composto substitui um índice isolado em fornecedor_id?**
+Sim. Pela regra de prefixo à esquerda, o índice composto já resolve com eficiência as buscas que envolvem apenas o fornecedor_id.
+
+**Por que não criamos índice específico para estoque mínimo?**
+Porque a condição compara duas colunas da mesma linha (`quantidade_em_estoque <= estoque_minimo`). Um índice simples não resolve e criar estratégias parciais agora aumentaria os custos de atualização sem benefício provado. A validação real deve basear-se depois em medições e planos de execução.
+
+**Índices sempre tornam o sistema mais rápido?**
+Não. Eles aceleram a leitura, mas diminuem o desempenho das operações de escrita.
+
+**Qual o custo de manter muitos índices?**
+Custo de armazenamento, custo de INSERT, UPDATE e DELETE, além do esforço de manutenção pelo próprio PostgreSQL.
+
+**Como validar futuramente se um índice realmente ajuda?**
+Por meio da análise do plano de execução utilizando as ferramentas `EXPLAIN` e `EXPLAIN ANALYZE`.
 
 ---
 

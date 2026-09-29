@@ -1051,6 +1051,45 @@ O Fornecedor participa tanto do cadastro atual dos Produtos quanto da referênci
 
 ---
 
+## DEC-029 — Estratégia de Índices e Padrões de Acesso
+
+Status: ACCEPTED
+
+### Contexto
+
+Definir a estratégia inicial de índices para suportar as consultas obrigatórias (por período, fornecedor, e por ambos combinados), os relacionamentos (JOINs e exclusões restritas) e otimizar acessos sem sobre-indexar as tabelas.
+
+### Opções consideradas
+
+1. Criar índices para todas as colunas frequentemente lidas.
+2. Criar índices preventivos baseados em cenários não documentados no desafio.
+3. Criar índices especializados para a regra de estoque mínimo.
+4. Adicionar estritamente os índices justificados pelos padrões de consulta obrigatórios e integridade referencial.
+
+### Decisão
+
+- Índices de PK e UNIQUE já geram suas estruturas nativamente e não devem ser duplicados.
+- Criaremos índices adicionais para as Foreign Keys que participam de JOINs lógicos e verificações de integridade de deleção RESTRICT: `Produto(categoria_id)`, `Produto(fornecedor_id)` e `Movimentacao_Estoque(produto_id)`.
+- Criaremos índices para buscas da auditoria: `Movimentacao_Estoque(data)` (para filtros de período isolado) e `Movimentacao_Estoque(fornecedor_id, data)` (para filtros de fornecedor, aproveitando prefixo à esquerda para fornecedor + período).
+- NÃO criaremos índice para `estoque_minimo` ou `quantidade_em_estoque` para resolver a consulta de "estoque mínimo" neste momento.
+- NÃO duplicaremos índices apenas para ORDER BY em campos que já possuem índice B-tree, pois este pode ser percorrido de trás para a frente (ordem decrescente).
+
+### Justificativa
+
+Os índices aceleram o processo de leitura e localização dos registros, mas geram custos em armazenamento, e retardam as operações de escrita (INSERT, UPDATE, DELETE). A criação de índices baseia-se num equilíbrio entre as consultas realmente exigidas (filtro por data, fornecedor, relacionamento) e a contenção do impacto nas escritas.
+
+A consulta de estoque mínimo compara duas colunas da mesma tabela (`quantidade_em_estoque <= estoque_minimo`). Índices simples ou parciais para essa funcionalidade trariam custo extra de atualização num cenário de pouca escala comprovada, não compensando uma otimização prematura. A efetividade destas e outras otimizações deverá ser validada futuramente via EXPLAIN/EXPLAIN ANALYZE, caso o volume assim exija.
+
+O índice composto `(fornecedor_id, data)` aproveita eficientemente o prefixo à esquerda (`fornecedor_id`) quando se quer apenas o fornecedor, assim evitamos criar um índice adicional só para `fornecedor_id`. Mas esse mesmo índice não tem capacidade de otimizar consultas apenas por `data`, por isto o índice isolado `(data)` foi incluído.
+
+### Consequências
+
+- Serão definidos no futuro (migrations/SQLAlchemy) apenas índices explícitos com as regras listadas, utilizando nomes consistentes (por exemplo, `ix_movimentacao_fornecedor_data`).
+- Alterações em massa de movimentações e produtos pagarão o custo de escrita destes índices recém aprovados.
+- Qualquer gargalo não coberto por esse modelo inicial de índices só deve justificar criação de novo índice após ser evidenciado em plano de execução.
+
+---
+
 ## PEND-005 — SQLAlchemy síncrono ou assíncrono
 
 Status: PROPOSED
