@@ -12,9 +12,21 @@ Ele acompanha toda a evolução da modelagem desde a análise inicial dos requis
 
 **DOMAIN_MODELING.md** (este documento) consolida o estado atual da modelagem e serve como material de estudo e consulta durante o desenvolvimento e a defesa técnica. Ele reflete as decisões já aprovadas em DECISIONS.md, mas não as antecipa.
 
-**Regra fundamental:** decisões ainda abertas não devem aparecer neste documento como definitivamente aprovadas. Enquanto uma questão da Matriz DOM permanecer com status OPEN, a modelagem correspondente deve permanecer em aberto neste documento.
-
 ---
+
+### Estado atual da modelagem
+
+| Área | Estado |
+|---|---|
+| DOM-001 a DOM-013 | RESOLVIDOS |
+| MER | APROVADO |
+| DER Mermaid | CONSOLIDADO |
+| Modelo Relacional | CONSOLIDADO |
+| Modelo Físico PostgreSQL | DEFINIDO DOCUMENTALMENTE |
+| Implementação SQLAlchemy/Alembic | PENDENTE |
+| Migrations | PENDENTES |
+| PostgreSQL de desenvolvimento | Ainda não configurado |
+| Estratégia de concorrência | DEFINIDA ARQUITETURALMENTE (DEC-031) — não implementada nem testada |
 
 ## 2. Convenções utilizadas
 
@@ -166,20 +178,16 @@ Produto é a entidade central do sistema. Representa um item físico gerenciado 
 |---|---|
 | `estoque_minimo` | Obrigatório, numérico inteiro, aceita zero, não aceita negativo (DEC-011) |
 
-**Relacionamentos:**
+**Relacionamentos (todos resolvidos):**
 
-- Categoria 1:N — cada Produto pertence a uma Categoria
-- Fornecedor 1:N — cada Produto possui um Fornecedor cadastral
-- Produto 1:N Movimentação (confirmado como inferência estrutural, ver seção 5.2)
+- Categoria 1:N Produto (DEC-008)
+- Fornecedor 1:N Produto, FK em Produto (DEC-009)
+- Produto 1:N Movimentação
 
-**Possíveis necessidades adicionais:**
+**Regras de domínio aprovadas:**
 
-- Um valor de referência de estoque mínimo por produto, necessário para a consulta exigida pelo desafio (ver DOM-004).
-- Chave(s) estrangeira(s) para Categoria e Fornecedor: estrutura exata depende de DOM-001 e DOM-002.
-
-**Decisões abertas:**
-
-- DOM-007: política de exclusão de produto com movimentações
+- Produto não pode ser excluído se possuir movimentações (DEC-019)
+- `quantidade_em_estoque` alterada exclusivamente via Movimentação (DEC-012, DEC-013)
 
 ---
 
@@ -201,15 +209,15 @@ Fornecedor representa a entidade externa que provê produtos para a loja. Deve s
 **Relacionamentos:**
 
 - Fornecedor 1:N Produto
-- Fornecedor 1:N Movimentação como referência histórica
+- Fornecedor 1:N Movimentação como referência histórica direta (MOVIMENTACAO_ESTOQUE.fornecedor_id → FORNECEDOR.id, DEC-010)
 
 **Possíveis necessidades adicionais:**
 
 - Nenhum campo adicional é necessário para satisfazer os requisitos obrigatórios do desafio. Endereço, site e demais dados cadastrais são fora do escopo.
 
-**Decisões abertas:**
+**Regras de domínio aprovadas:**
 
-- DOM-008: política de exclusão de fornecedor relacionado a histórico
+- Fornecedor não pode ser excluído se possuir Produtos ou Movimentações associadas (DEC-020)
 
 ---
 
@@ -233,9 +241,9 @@ Categoria é uma classificação aplicada a produtos. É intencionalmente simple
 
 - Nenhum campo adicional é identificado como necessário pelos requisitos do desafio.
 
-**Decisões abertas:**
+**Regra de domínio aprovada:**
 
-- DOM-013: política de exclusão de categoria com produtos
+- Categoria referenciada por Produto não pode ser excluída (RESTRICT, DEC-018)
 
 ---
 
@@ -244,32 +252,23 @@ Categoria é uma classificação aplicada a produtos. É intencionalmente simple
 **Responsabilidade no domínio:**
 Movimentação é o registro imutável de auditoria de cada alteração no estoque de um produto. Representa um evento que já ocorreu. Não pode ser corrigida; erros são compensados por novas movimentações.
 
-**Atributos explicitamente exigidos:**
+**Atributos exigidos e aprovados:**
 
-| Atributo | Constraint explícita |
+| Atributo | Constraint/Regra |
 |---|---|
-| `id` | Identificador único |
-| `tipo` | Entrada ou saída |
-| `quantidade` | — |
-| `data` | — |
+| `id` | Identificador único (PK) |
+| `produto_id` | FK obrigatória para Produto (inferência estrutural, IE-01) |
+| `fornecedor_id` | FK histórica obrigatória para Fornecedor, capturada do Produto na criação (DEC-010) |
+| `tipo` | ENTRADA ou SAIDA, conjunto fechado (DEC-016) |
+| `quantidade` | Inteiro > 0, somente magnitude (DEC-014) |
+| `data` | Instante determinado pelo sistema (DEC-017, DEC-030) |
 
-**Relacionamentos:**
+**Regras de domínio aprovadas:**
 
-- Produto 1:N Movimentação
-- Fornecedor 1:N Movimentação
-- Fornecedor histórico capturado do Produto na criação
-
-**Possíveis necessidades adicionais:**
-
-- `produto_id`: inferência estrutural necessária — sem saber qual produto a movimentação afeta, ela não tem utilidade para auditoria nem para atualização de estoque.
-- Referência a Fornecedor: necessária para filtro por fornecedor; forma exata em aberto (DOM-003).
-
-**Decisões abertas:**
-
-- DOM-009: representação do tipo (enum, string com CHECK, outro)
-- DOM-010: origem da data (gerada pelo servidor ou informada pelo cliente)
-- DOM-011: quantidade aceita zero? aceita negativo?
-- DOM-012: saída pode ultrapassar estoque disponível?
+- Saída não pode ultrapassar saldo disponível (DEC-015)
+- Movimentação é imutável após criação (RE-05, RE-06)
+- Produto não pode ser excluído se possuir movimentações (DEC-019)
+- Fornecedor não pode ser excluído se possuir movimentações (DEC-020)
 
 ---
 
@@ -313,9 +312,9 @@ A necessidade de um valor de referência foi confirmada estruturalmente. A solu�
 
 ---
 
-### 5.3 Regras propostas / decisões ainda abertas
+### 5.3 Histórico das regras propostas
 
-*Todas as regras propostas (RPs) emergentes da análise do domínio foram formalmente resolvidas e promovidas a regras aprovadas (RAs).*
+*Todas as regras inicialmente propostas durante a análise de domínio foram formalmente resolvidas e promovidas a regras aprovadas (RAs). Não há regras propostas abertas.*
 
 ---
 
@@ -343,7 +342,7 @@ As regras abaixo foram formalmente decididas e aprovadas:
 
 ## 6. Matriz de ambiguidades DOM
 
-As questões abaixo permanecem abertas até aprovação explícita. Nenhuma deve ser resolvida silenciosamente durante a implementação.
+A matriz abaixo preserva as ambiguidades identificadas durante a análise de domínio e registra sua resolução. Todas as questões DOM-001 a DOM-013 estão atualmente **CLOSED / ACCEPTED**.
 
 | ID | Questão | Requisito relacionado | Alternativas | Impacto | Dependências | Status |
 |---|---|---|---|---|---|---|
@@ -363,9 +362,9 @@ As questões abaixo permanecem abertas até aprovação explícita. Nenhuma deve
 
 ---
 
-## 7. Ordem de resolução das decisões DOM
+## 7. Ordem histórica de resolução das decisões DOM
 
-A ordem abaixo respeita as dependências entre as decisões. Decisões anteriores condicionam as posteriores.
+A ordem abaixo foi utilizada para resolver as ambiguidades respeitando as dependências entre decisões. Está registrada como histórico, não como fila de trabalho atual.
 
 | Prioridade | ID | Justificativa da posição |
 |---|---|---|
@@ -513,13 +512,13 @@ Nenhum relacionamento aprovado é N:N. Por isso o modelo atual NÃO precisa de t
 ### Mapeamento dos relacionamentos (Migração de Chaves)
 
 1. **CATEGORIA 1:N PRODUTO**
-   A PK de Categoria migra para o lado N: `PRODUTO.categoria_id → CATEGORIA.id`. Como Produto participa com (1,1), `categoria_id` será logicamente obrigatório.
+   A PK de Categoria é referenciada como FK no lado N: `PRODUTO.categoria_id → CATEGORIA.id`. Como Produto participa com (1,1), `categoria_id` será logicamente obrigatório.
 2. **FORNECEDOR 1:N PRODUTO**
-   A PK de Fornecedor migra para o lado N: `PRODUTO.fornecedor_id → FORNECEDOR.id`. Esse campo representa o fornecedor cadastral atual do Produto.
+   A PK de Fornecedor é referenciada como FK no lado N: `PRODUTO.fornecedor_id → FORNECEDOR.id`. Esse campo representa o fornecedor cadastral atual do Produto.
 3. **PRODUTO 1:N MOVIMENTACAO_ESTOQUE**
-   A PK de Produto migra para o lado N: `MOVIMENTACAO_ESTOQUE.produto_id → PRODUTO.id`. Toda Movimentação pertence a exatamente um Produto.
+   A PK de Produto é referenciada como FK no lado N: `MOVIMENTACAO_ESTOQUE.produto_id → PRODUTO.id`. Toda Movimentação pertence a exatamente um Produto.
 4. **FORNECEDOR 1:N MOVIMENTACAO_ESTOQUE**
-   A PK de Fornecedor migra para o lado N: `MOVIMENTACAO_ESTOQUE.fornecedor_id → FORNECEDOR.id`. Esse campo possui semântica histórica:
+   A PK de Fornecedor é referenciada como FK no lado N: `MOVIMENTACAO_ESTOQUE.fornecedor_id → FORNECEDOR.id`. Esse campo possui semântica histórica:
    - `Produto.fornecedor_id` = fornecedor cadastral atual;
    - `Movimentacao.fornecedor_id` = fornecedor associado ao Produto no momento da Movimentação.
    Não se deve eliminar nenhuma das duas FKs como "duplicação".
@@ -585,14 +584,20 @@ fornecedor_id FK → FORNECEDOR.id NOT NULL
 
 - **MER:** visão conceitual do domínio.
 - **DER:** representação visual do MER.
-- **Modelo Relacional:** relações, atributos, PK, FK e constraints lógicas.
-- **Modelo Físico PostgreSQL:** implementação concreta ainda PENDENTE.
+- **Modelo Relacional:** relações, atributos, PK, FK e constraints lógicas. Independente de SGBD.
+- **Modelo Físico PostgreSQL:** DEFINIDO DOCUMENTALMENTE. Inclui tipos, constraints (CHECK, DEFAULT, ON DELETE), índices e política temporal. Ainda não materializado no banco.
+
+**Ainda não implementado:**
+- Models SQLAlchemy;
+- Configuração do Alembic;
+- Migrations;
+- Schema real criado no PostgreSQL.
 
 ## 12. Modelo Físico PostgreSQL
 
-**Status: EM CONSTRUÇÃO — primeiro bloco de tipos físicos aprovado.**
+**Status: DEFINIDO DOCUMENTALMENTE — aguardando implementação via SQLAlchemy/Alembic e aplicação das migrations.**
 
-A representação dos dados no SGBD PostgreSQL está definida abaixo. Constraints finais (`CHECK`, `DEFAULT`, `ON DELETE`) e os índices de busca ainda serão estabelecidos.
+A representação dos dados no SGBD PostgreSQL está definida abaixo. Todos os tipos, constraints (`CHECK`, `DEFAULT`, `ON DELETE`) e índices já foram aprovados documentalmente.
 
 ### Tipos Físicos e Colunas
 
@@ -688,7 +693,9 @@ Para evitar problemas de *race condition* na atualização de estoques, o sistem
 7. Criar a `MOVIMENTACAO_ESTOQUE` contendo os dados, incluindo o fornecedor histórico recém capturado da linha bloqueada.
 `COMMIT` (Qualquer falha após o BEGIN resulta em `ROLLBACK`).
 
-A atomicidade deste bloco transacional é essencial, garantindo que o saldo e o histórico não divirjam (tudo ou nada). O isolamento (`READ COMMITTED` em conjunto com `FOR UPDATE`) garante que duas requisições concorrentes para o mesmo produto sejam serializadas no SGBD, aguardando a liberação do lock. Operações em Produtos diferentes correm em paralelo.
+A atomicidade deste bloco transacional é essencial, garantindo que o saldo e o histórico não divirjam (tudo ou nada). O isolamento (`READ COMMITTED` em conjunto com `FOR UPDATE`) serializa operações concorrentes sobre a mesma linha de Produto, forçando a segunda requisição a aguardar a liberação do lock antes de prosseguir. Operações em Produtos diferentes não disputam o mesmo row-level lock de Produto. A consistência deverá ser confirmada por testes.
+
+> **Estado:** Estrategia DEFINIDA ARQUITETURALMENTE (DEC-031). Não implementada nem testada.
 
 ---
 
@@ -741,7 +748,7 @@ O Diagrama Entidade-Relacionamento é a representação visual gráfica do MER.
 O modelo relacional define a estrutura lógica independente de SGBD (tabelas, PKs, FKs, constraints lógicas). O modelo físico é a implementação real (ex: PostgreSQL) com tipos nativos, sintaxe SQL específica e definições de armazenamento.
 
 **Como o MER foi convertido para o modelo relacional?**
-Transformando entidades em tabelas, atributos em colunas e aplicando regras de migração de chaves (a PK do lado 1 migra como FK para o lado N).
+Transformando entidades em tabelas, atributos em colunas e aplicando regras de migração de chaves (a PK do lado 1 é referenciada como FK no lado N).
 
 **O que significa cardinalidade mínima e máxima?**
 A mínima define se o relacionamento é opcional (0) ou obrigatório (1). A máxima define o limite de associações: apenas uma (1) ou múltiplas (N).
@@ -752,8 +759,8 @@ Porque o modelo relacional exige valores atômicos por coluna (1ª Forma Normal)
 **Por que não existe tabela associativa?**
 Porque o modelo aprovado não possui relacionamentos N:N. Relacionamentos 1:N são resolvidos diretamente com chave estrangeira (FK) na própria tabela dependente.
 
-**Por que tipos PostgreSQL ainda não foram escolhidos?**
-(Respondido no passado). Para manter a separação de responsabilidades. Definir tipos físicos durante a modelagem lógica anteciparia restrições irrelevantes àquela etapa.
+**Por que os tipos PostgreSQL só foram definidos depois do modelo relacional?**
+Para manter a separação de responsabilidades entre os níveis de modelagem. Definir tipos físicos durante a modelagem lógica anteciparia restrições irrelevantes àquela etapa e acoplaria o modelo conceitual/lógico a decisões de implementação.
 
 **Qual a diferença entre uma regra garantida pelo banco e uma regra garantida pela aplicação?**
 Uma regra no banco (como `NOT NULL`, `CHECK`) atua como a última linha de defesa estrutural, impedindo dados inválidos em qualquer nível. A regra na aplicação (como bloquear saída sem saldo) é ideal para lógicas de negócio complexas, orquestração de transações ou dependências de estado dinâmico (onde o banco precisaria de PL/pgSQL acoplado para avaliar tabelas).
@@ -869,10 +876,10 @@ Adquire um lock pessimista na(s) linha(s) afetada(s). Nenhuma outra transação 
 Porque a tabela Produto contém o recurso compartilhado sob disputa (o saldo `quantidade_em_estoque`). Ele representa a unidade natural de concorrência.
 
 **Duas Movimentações de Produtos diferentes se bloqueiam?**
-Não. O lock atua em nível de linha (row-level lock) na tabela Produto. Fluxos afetando IDs diferentes correm em paralelo perfeitamente.
+Não. O lock atua em nível de linha (row-level lock) na tabela Produto. Requisições afetando IDs diferentes não disputam o mesmo lock e processam de forma independente. Outros mecanismos internos do SGBD ainda podem produzir espera pontual.
 
 **Por que entrada também usa o lock?**
-Garante um caminho algorítmico único e evita ambiguidades em cenários onde entradas e saídas concorrem simultaneamente, mantendo consistência absoluta para aquele produto.
+Garante um caminho algorítmico único e evita ambiguidades em cenários onde entradas e saídas concorrem simultaneamente pelo mesmo Produto.
 
 **Qual a diferença entre transação e lock?**
 A transação (garantida com BEGIN e COMMIT/ROLLBACK) assegura a *atomicidade* (tudo falha ou tudo passa). O lock (`FOR UPDATE`) controla o *isolamento/concorrência* de acessos aos mesmos dados no intervalo de tempo dessa transação.
@@ -904,4 +911,5 @@ O UPDATE condicional atômico (`UPDATE ... SET qtd = qtd - X WHERE qtd >= X`). �
 | v0.7 | TSK-2.3 — Resolução de DOM-009 e DOM-010 (tipo e data da movimentação) | CONCLUÍDO |
 | v0.8 | TSK-2.3 — Resolução de DOM-007, DOM-008 e DOM-013 (regras de exclusão) | CONCLUÍDO |
 | v0.9 | TSK-2.4 — Consolidação do MER, min/max, DER completo em Mermaid e modelo relacional mapeado | CONCLUÍDO |
-| v0.10 | TSK-2.5 — Modelo físico PostgreSQL definido | PENDENTE |
+| v0.10 | Modelo físico PostgreSQL consolidado documentalmente (tipos, constraints, índices e timezone) | CONCLUÍDO |
+| v0.11 | Estratégia arquitetural de concorrência definida antecipadamente para TSK-7.3 (DEC-031) | CONCLUÍDO |

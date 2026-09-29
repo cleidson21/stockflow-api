@@ -315,7 +315,7 @@ Identificadores como CNPJ, SKU e Telefone não devem ser numéricos (`BIGINT`) p
 
 ### Consequências
 
-- O `CNPJ` será armazenado normalizado e sem máscaras. A restrição de dígitos `CHECK` exata pertencerá a uma etapa futura de constraints lógicas.
+- O `CNPJ` será armazenado normalizado e sem máscaras. A restrição de dígitos `CHECK` exata pertencerá a uma etapa futura de constraints lógicas. *Resolvido posteriormente na consolidação do modelo físico (DEC-026/DEC-027).*
 - O limite máximo deverá ser validado pela API (via Pydantic futuramente) antes da persistência para garantir status 422 adequado em vez de erro SQL genérico.
 
 ---
@@ -376,7 +376,7 @@ Datas e horas em uma aplicação devem sempre referenciar instantes reais absolu
 
 ### Consequências
 
-- Será necessário definir posteriormente uma política operacional de UTC ou Fuso local claro na camada da API (FastAPI) na passagem do valor, bem como os valores default físicos.
+- Será necessário definir posteriormente uma política operacional de UTC ou Fuso local claro na camada da API (FastAPI) na passagem do valor, bem como os valores default físicos. *Resolvido posteriormente por DEC-030.*
 
 ---
 
@@ -396,7 +396,7 @@ Como armazenar fisicamente os tipos da movimentação ("ENTRADA", "SAÍDA") de f
 
 ### Decisão
 
-O tipo de movimentação será representado como `VARCHAR(7)` associado futuramente a uma constraint `CHECK (tipo IN ('ENTRADA', 'SAIDA'))`.
+O tipo de movimentação será representado como `VARCHAR(7)` associado a uma constraint `CHECK (tipo IN ('ENTRADA', 'SAIDA'))`. *Constraint já aprovada em DEC-025. Resolvido posteriormente por DEC-025.*
 
 ### Justificativa
 
@@ -571,7 +571,7 @@ Uma Categoria pode classificar zero ou muitos Produtos. Cada Produto pertence ob
 - Produto terá uma Categoria obrigatória (FK não nula para Categoria).
 - Uma Categoria pode possuir zero ou muitos Produtos.
 - No modelo relacional, a FK `category_id` estará na tabela de Produto.
-- A política de exclusão de Categoria com Produtos associados continua dependendo de DOM-013 (ainda OPEN).
+- A política de exclusão de Categoria com Produtos associados continua dependendo de DOM-013 (ainda OPEN). *Resolvido posteriormente por DEC-018.*
 - Se no futuro o projeto evoluir para múltiplas categorias por produto, uma refatoração de schema seria necessária.
 
 ---
@@ -657,8 +657,8 @@ A referência direta preserva o fornecedor associado ao Produto no momento do ev
 - A duplicação entre os dois campos é deliberada: eles possuem semânticas temporais diferentes.
 - `supplier_id` numa movimentação de saída não significa que o fornecedor "causou" a saída; representa apenas o fornecedor cadastral histórico do Produto naquele momento.
 - Não será implementado snapshot dos dados do fornecedor (nome, CNPJ etc.); apenas a FK é preservada.
-- A política de exclusão de Fornecedor com movimentações associadas continua dependendo de DOM-008 (ainda OPEN).
-- A captura do fornecedor e a criação da movimentação deverão participar da mesma fronteira transacional da atualização de estoque (a ser implementada na Fase 4).
+- A política de exclusão de Fornecedor com movimentações associadas continua dependendo de DOM-008 (ainda OPEN). *Resolvido posteriormente por DEC-020.*
+- A captura do fornecedor e a criação da movimentação deverão participar da mesma fronteira transacional da atualização de estoque. *Estrategia transacional formalizada em DEC-031.*
 
 ---
 
@@ -942,7 +942,7 @@ A data/hora da Movimentação será **determinada pelo servidor no momento da cr
 - A informação precisa permitir ordenação temporal e filtro por período.
 - Conceitualmente, deve possuir precisão de data e hora (não apenas o dia).
 
-*(Nota: Detalhes como TIMESTAMP vs TIMESTAMPTZ, timezone, UTC ou default físico no PostgreSQL serão definidos no modelo físico).*
+*(Nota: Detalhes como TIMESTAMP vs TIMESTAMPTZ, timezone, UTC ou default físico no PostgreSQL serão definidos no modelo físico.) Resolvido posteriormente por DEC-024 e DEC-030.*
 
 ### Justificativa
 
@@ -950,7 +950,7 @@ Como a Movimentação é um registro de auditoria crítico para o sistema, gerar
 
 ### Consequências
 
-- Os payloads de requisição para criação de movimentação (input) rejeitarão ou ignorarão informações de data.
+- A data/hora não integra o contrato gravável de criação da Movimentação. O comportamento genérico para campos extras pertence à futura definição dos schemas/validação da API.
 - A própria camada de aplicação ou banco de dados injetará o valor atual.
 
 ## DEC-018 — Exclusão de Categoria (RESTRICT)
