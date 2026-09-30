@@ -204,9 +204,9 @@ Período planejado: 27/09 a 29/09.
 
 ### TSK-2.8 — Alembic
 
-- [ ] Entender migrations.
-- [ ] Inicializar Alembic.
-- [ ] Integrar Alembic aos modelos.
+- [x] Entender migrations.
+- [x] Inicializar Alembic.
+- [x] Integrar Alembic aos modelos.
 - [ ] Criar migration inicial.
 - [ ] Revisar SQL/schema gerado.
 - [ ] Aplicar migration.
