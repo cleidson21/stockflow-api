@@ -2,6 +2,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlalchemy.engine import URL
 
 from alembic import context
 
@@ -46,7 +47,13 @@ def run_migrations_offline() -> None:
     script output.
 
     # Carregando a URL programaticamente a partir da configuração da aplicação e removendo a senha
-    offline_url = settings.database_url._replace(password=None)
+    offline_url = URL.create(
+        drivername=settings.database_url.drivername,
+        username=settings.database_url.username,
+        host=settings.database_url.host,
+        port=settings.database_url.port,
+        database=settings.database_url.database,
+    )
     url = offline_url.render_as_string(hide_password=False)
     context.configure(
         url=url,
