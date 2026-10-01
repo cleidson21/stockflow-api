@@ -209,8 +209,8 @@ Período planejado: 27/09 a 29/09.
 - [x] Integrar Alembic aos modelos.
 - [x] Criar migration inicial.
 - [x] Revisar SQL/schema gerado.
-- [ ] Aplicar migration.
-- [ ] Validar tabelas no PostgreSQL.
+- [x] Aplicar migration.
+- [x] Validar tabelas no PostgreSQL.
 
 ---
 

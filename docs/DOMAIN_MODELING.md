@@ -22,10 +22,10 @@ Ele acompanha toda a evolução da modelagem desde a análise inicial dos requis
 | MER | APROVADO |
 | DER Mermaid | CONSOLIDADO |
 | Modelo Relacional | CONSOLIDADO |
-| Modelo Físico PostgreSQL | DEFINIDO DOCUMENTALMENTE |
-| Implementação SQLAlchemy/Alembic | PENDENTE |
-| Migrations | PENDENTES |
-| PostgreSQL de desenvolvimento | Ainda não configurado |
+| Modelo Físico PostgreSQL | IMPLEMENTADO E VALIDADO |
+| Implementação SQLAlchemy/Alembic | MATERIALIZADO |
+| Migrations | APLICADAS |
+| PostgreSQL de desenvolvimento | Operacional e validado |
 | Estratégia de concorrência | DEFINIDA ARQUITETURALMENTE (DEC-031) — não implementada nem testada |
 
 ## 2. Convenções utilizadas
@@ -585,17 +585,17 @@ fornecedor_id FK → FORNECEDOR.id NOT NULL
 - **MER:** visão conceitual do domínio.
 - **DER:** representação visual do MER.
 - **Modelo Relacional:** relações, atributos, PK, FK e constraints lógicas. Independente de SGBD.
-- **Modelo Físico PostgreSQL:** DEFINIDO DOCUMENTALMENTE. Inclui tipos, constraints (CHECK, DEFAULT, ON DELETE), índices e política temporal. Ainda não materializado no banco.
+- **Modelo Físico PostgreSQL:** IMPLEMENTADO E VALIDADO. Inclui tipos, constraints (CHECK, DEFAULT, ON DELETE), índices e política temporal materializados no banco.
 
-**Ainda não implementado:**
-- Models SQLAlchemy;
-- Configuração do Alembic;
+**Implementado com Sucesso:**
+- Models SQLAlchemy (TSK-2.7);
+- Configuração do Alembic (TSK-2.8);
 - Migrations;
 - Schema real criado no PostgreSQL.
 
 ## 12. Modelo Físico PostgreSQL
 
-**Status: DEFINIDO DOCUMENTALMENTE — aguardando implementação via SQLAlchemy/Alembic e aplicação das migrations.**
+**Status: IMPLEMENTADO E VALIDADO no PostgreSQL.**
 
 A representação dos dados no SGBD PostgreSQL está definida abaixo. Todos os tipos, constraints (`CHECK`, `DEFAULT`, `ON DELETE`) e índices já foram aprovados documentalmente.
 
@@ -634,9 +634,6 @@ A representação dos dados no SGBD PostgreSQL está definida abaixo. Todos os t
 - **Dígito verificador do CNPJ:** O banco garante apenas que tenha 14 números lógicos (formato). A validade matemática do CNPJ pertence à lógica de negócios.
 - **Bloqueio de estoque inicial:** Apesar do `DEFAULT 0` no banco, a API deve proibir qualquer envio manual de `quantidade_em_estoque` no cadastro.
 
-### Pendentes (Modelo Físico)
-- Implementação SQLAlchemy/Alembic.
-- Migrations.
 
 ### Nota de Performance e Índices (Defesa Técnica)
 
