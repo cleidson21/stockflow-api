@@ -87,7 +87,7 @@ def excluir_categoria(categoria_id: int, db: Session = Depends(get_db)):
         return None
     except IntegrityError as e:
         db.rollback()
-        if e.orig and hasattr(e.orig, "sqlstate") and e.orig.sqlstate in ("23503", "23502"):
+        if e.orig and hasattr(e.orig, "sqlstate") and e.orig.sqlstate == "23503":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A categoria não pode ser removida pois possui produtos relacionados."
