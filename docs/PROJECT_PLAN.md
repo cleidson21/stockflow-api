@@ -267,12 +267,12 @@ Período planejado: 30/09 a 03/10.
 
 ### TSK-3.4 — Revisão CRUD
 
-- [ ] Validar códigos HTTP.
-- [ ] Validar respostas.
-- [ ] Validar constraints no banco.
-- [ ] Validar Swagger/OpenAPI.
-- [ ] Revisar duplicação de lógica.
-- [ ] Revisar clareza do código.
+- [x] Validar códigos HTTP.
+- [x] Validar respostas.
+- [x] Validar constraints no banco.
+- [x] Validar Swagger/OpenAPI.
+- [x] Revisar duplicação de lógica.
+- [x] Revisar clareza do código.
 
 ---
 
