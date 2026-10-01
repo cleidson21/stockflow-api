@@ -252,18 +252,18 @@ Período planejado: 30/09 a 03/10.
 
 ### TSK-3.3 — Produto
 
-- [ ] Definir modelo.
-- [ ] Definir schemas.
-- [ ] Criar produto.
-- [ ] Listar produtos.
-- [ ] Consultar produto por id.
-- [ ] Atualizar produto.
-- [ ] Excluir produto conforme regras definidas.
-- [ ] Garantir SKU único.
-- [ ] Validar relacionamentos.
-- [ ] Validar preços e quantidades.
-- [ ] Documentar endpoints.
-- [ ] Testar casos principais.
+- [x] Definir modelo.
+- [x] Definir schemas.
+- [x] Criar produto.
+- [x] Listar produtos.
+- [x] Consultar produto por id.
+- [x] Atualizar produto.
+- [x] Excluir produto conforme regras definidas.
+- [x] Garantir SKU único.
+- [x] Validar relacionamentos.
+- [x] Validar preços e quantidades.
+- [x] Documentar endpoints.
+- [x] Testar casos principais.
 
 ### TSK-3.4 — Revisão CRUD
 
