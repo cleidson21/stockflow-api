@@ -237,18 +237,18 @@ Período planejado: 30/09 a 03/10.
 
 ### TSK-3.2 — Fornecedor
 
-- [ ] Definir modelo.
-- [ ] Definir schemas.
-- [ ] Criar fornecedor.
-- [ ] Listar fornecedores.
-- [ ] Consultar fornecedor por id.
-- [ ] Atualizar fornecedor.
-- [ ] Excluir fornecedor conforme regra definida.
-- [ ] Garantir CNPJ único.
-- [ ] Garantir email único.
-- [ ] Validar erros de duplicidade.
-- [ ] Documentar endpoints.
-- [ ] Testar casos principais.
+- [x] Definir modelo.
+- [x] Definir schemas.
+- [x] Criar fornecedor.
+- [x] Listar fornecedores.
+- [x] Consultar fornecedor por id.
+- [x] Atualizar fornecedor.
+- [x] Excluir fornecedor conforme regra definida.
+- [x] Garantir CNPJ único.
+- [x] Garantir email único.
+- [x] Validar erros de duplicidade.
+- [x] Documentar endpoints.
+- [x] Testar casos principais.
 
 ### TSK-3.3 — Produto
 
