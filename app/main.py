@@ -6,6 +6,9 @@ app = FastAPI(
     version="0.1.0",
 )
 
+from app.routers import categorias
+app.include_router(categorias.router)
+
 
 @app.get("/")
 def root():

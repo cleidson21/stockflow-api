@@ -222,18 +222,18 @@ Período planejado: 30/09 a 03/10.
 
 ### TSK-3.1 — Categoria
 
-- [ ] Definir modelo.
-- [ ] Definir schemas de entrada e saída.
-- [ ] Criar categoria.
-- [ ] Listar categorias.
-- [ ] Consultar categoria por id.
-- [ ] Atualizar categoria.
-- [ ] Excluir categoria.
-- [ ] Garantir unicidade do nome.
-- [ ] Tratar categoria inexistente.
-- [ ] Impedir exclusão incompatível com produtos relacionados.
-- [ ] Documentar endpoints.
-- [ ] Testar casos principais.
+- [x] Definir modelo.
+- [x] Definir schemas de entrada e saída.
+- [x] Criar categoria.
+- [x] Listar categorias.
+- [x] Consultar categoria por id.
+- [x] Atualizar categoria.
+- [x] Excluir categoria.
+- [x] Garantir unicidade do nome.
+- [x] Tratar categoria inexistente.
+- [x] Impedir exclusão incompatível com produtos relacionados.
+- [x] Documentar endpoints.
+- [x] Testar casos principais.
 
 ### TSK-3.2 — Fornecedor
 
