@@ -10,13 +10,24 @@ from app.models.produto import Produto
 from app.models.movimentacao import MovimentacaoEstoque
 from app.models.fornecedor import Fornecedor
 from app.schemas.movimentacao import MovimentacaoCreate, MovimentacaoResponse, TipoMovimentacao
+from app.schemas.erro import ErrorResponse, ValidationErrorResponse
 
 router = APIRouter(
     prefix="/movimentacoes",
     tags=["Movimentações"]
 )
 
-@router.post("", response_model=MovimentacaoResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=MovimentacaoResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {"model": ErrorResponse, "description": "Produto não encontrado."},
+        409: {"model": ErrorResponse, "description": "Estoque insuficiente para a saída solicitada."},
+        422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def criar_movimentacao(mov_in: MovimentacaoCreate, db: Session = Depends(get_db)):
     try:
         with db.begin():
@@ -34,7 +45,7 @@ def criar_movimentacao(mov_in: MovimentacaoCreate, db: Session = Depends(get_db)
             elif mov_in.tipo == TipoMovimentacao.SAIDA:
                 if mov_in.quantidade > produto.quantidade_em_estoque:
                     raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
+                        status_code=status.HTTP_409_CONFLICT,
                         detail="Estoque insuficiente para a saída solicitada."
                     )
                 produto.quantidade_em_estoque -= mov_in.quantidade
@@ -56,7 +67,16 @@ def criar_movimentacao(mov_in: MovimentacaoCreate, db: Session = Depends(get_db)
 
 
 
-@router.get("", response_model=List[MovimentacaoResponse])
+@router.get(
+    "",
+    response_model=List[MovimentacaoResponse],
+    responses={
+        400: {"model": ErrorResponse, "description": "data_inicio não pode ser posterior a data_fim."},
+        404: {"model": ErrorResponse, "description": "Fornecedor explicitamente não encontrado."},
+        422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def listar_movimentacoes(
     db: Session = Depends(get_db),
     data_inicio: Optional[AwareDatetime] = None,
@@ -87,7 +107,15 @@ def listar_movimentacoes(
     stmt = stmt.order_by(MovimentacaoEstoque.id)
     return db.scalars(stmt).all()
 
-@router.get("/{movimentacao_id}", response_model=MovimentacaoResponse)
+@router.get(
+    "/{movimentacao_id}",
+    response_model=MovimentacaoResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Movimentação não encontrada."},
+        422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def buscar_movimentacao(movimentacao_id: int, db: Session = Depends(get_db)):
     movimentacao = db.get(MovimentacaoEstoque, movimentacao_id)
     if not movimentacao:

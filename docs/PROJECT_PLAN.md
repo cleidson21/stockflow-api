@@ -371,35 +371,35 @@ Período planejado: 09/10 a 10/10.
 
 ### TSK-6.1 — Modelo de erro
 
-- [ ] Definir formato padronizado.
-- [ ] Definir campos da resposta.
-- [ ] Diferenciar erro de validação, negócio e recurso inexistente.
+- [x] Definir formato padronizado.
+- [x] Definir campos da resposta.
+- [x] Diferenciar erro de validação, negócio e recurso inexistente.
 
 ### TSK-6.2 — Códigos HTTP
 
-- [ ] Revisar 2xx.
-- [ ] Revisar 400.
-- [ ] Revisar 404.
-- [ ] Avaliar uso de 409 para conflitos de unicidade/regra.
-- [ ] Entender validação 422 do FastAPI.
-- [ ] Garantir uso correto de 500.
+- [x] Revisar 2xx.
+- [x] Revisar 400.
+- [x] Revisar 404.
+- [x] Avaliar uso de 409 para conflitos de unicidade/regra.
+- [x] Entender validação 422 do FastAPI.
+- [x] Garantir uso correto de 500.
 
 ### TSK-6.3 — Segurança dos erros
 
-- [ ] Não retornar stack traces.
-- [ ] Não expor credenciais.
-- [ ] Não expor informações internas desnecessárias.
-- [ ] Manter logs úteis apenas no servidor.
+- [x] Não retornar stack traces.
+- [x] Não expor credenciais.
+- [x] Não expor informações internas desnecessárias.
+- [x] Manter logs úteis apenas no servidor.
 
 ### TSK-6.4 — OpenAPI/Swagger
 
-- [ ] Documentar cada endpoint.
-- [ ] Documentar parâmetros.
-- [ ] Documentar request bodies.
-- [ ] Documentar respostas 2xx.
-- [ ] Documentar respostas 4xx.
-- [ ] Documentar respostas 5xx quando apropriado.
-- [ ] Adicionar exemplos relevantes.
+- [x] Documentar cada endpoint.
+- [x] Documentar parâmetros.
+- [x] Documentar request bodies.
+- [x] Documentar respostas 2xx.
+- [x] Documentar respostas 4xx.
+- [x] Documentar respostas 5xx quando apropriado.
+- [x] Adicionar exemplos relevantes.
 
 ### TSK-6.5 — README
 

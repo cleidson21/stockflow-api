@@ -4,8 +4,13 @@ class CategoriaBase(BaseModel):
     nome: str = Field(..., max_length=100)
 
 class CategoriaCreate(CategoriaBase):
-    pass
-
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "nome": "Eletrônicos"
+            }
+        }
+    )
 class CategoriaUpdate(CategoriaBase):
     pass
 

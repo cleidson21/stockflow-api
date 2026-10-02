@@ -8,13 +8,23 @@ from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.fornecedor import Fornecedor
 from app.schemas.fornecedor import FornecedorCreate, FornecedorUpdate, FornecedorResponse
+from app.schemas.erro import ErrorResponse, ValidationErrorResponse
 
 router = APIRouter(
     prefix="/fornecedores",
     tags=["Fornecedores"]
 )
 
-@router.post("", response_model=FornecedorResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=FornecedorResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        409: {"model": ErrorResponse, "description": "CNPJ ou email já cadastrado."},
+        422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def criar_fornecedor(fornecedor_in: FornecedorCreate, db: Session = Depends(get_db)):
     novo_fornecedor = Fornecedor(
         nome=fornecedor_in.nome,
@@ -42,17 +52,31 @@ def criar_fornecedor(fornecedor_in: FornecedorCreate, db: Session = Depends(get_
                 mensagem = "CNPJ ou email já cadastrado."
                 
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail=mensagem
             )
         raise e
 
-@router.get("", response_model=List[FornecedorResponse])
+@router.get(
+    "",
+    response_model=List[FornecedorResponse],
+    responses={
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def listar_fornecedores(db: Session = Depends(get_db)):
     stmt = select(Fornecedor).order_by(Fornecedor.id)
     return db.scalars(stmt).all()
 
-@router.get("/{fornecedor_id}", response_model=FornecedorResponse)
+@router.get(
+    "/{fornecedor_id}",
+    response_model=FornecedorResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Fornecedor não encontrado."},
+        422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def buscar_fornecedor(fornecedor_id: int, db: Session = Depends(get_db)):
     fornecedor = db.get(Fornecedor, fornecedor_id)
     if not fornecedor:
@@ -62,7 +86,16 @@ def buscar_fornecedor(fornecedor_id: int, db: Session = Depends(get_db)):
         )
     return fornecedor
 
-@router.put("/{fornecedor_id}", response_model=FornecedorResponse)
+@router.put(
+    "/{fornecedor_id}",
+    response_model=FornecedorResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Fornecedor não encontrado."},
+        409: {"model": ErrorResponse, "description": "CNPJ ou email já cadastrado."},
+        422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def atualizar_fornecedor(fornecedor_id: int, fornecedor_in: FornecedorUpdate, db: Session = Depends(get_db)):
     fornecedor = db.get(Fornecedor, fornecedor_id)
     if not fornecedor:
@@ -94,12 +127,21 @@ def atualizar_fornecedor(fornecedor_id: int, fornecedor_in: FornecedorUpdate, db
                 mensagem = "CNPJ ou email já cadastrado."
                 
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail=mensagem
             )
         raise e
 
-@router.delete("/{fornecedor_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{fornecedor_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        404: {"model": ErrorResponse, "description": "Fornecedor não encontrado."},
+        409: {"model": ErrorResponse, "description": "O fornecedor não pode ser removido pois possui registros relacionados."},
+        422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def excluir_fornecedor(fornecedor_id: int, db: Session = Depends(get_db)):
     fornecedor = db.get(Fornecedor, fornecedor_id)
     if not fornecedor:
@@ -109,14 +151,16 @@ def excluir_fornecedor(fornecedor_id: int, db: Session = Depends(get_db)):
         )
     
     try:
-        db.delete(fornecedor)
+        from sqlalchemy import delete
+        stmt = delete(Fornecedor).where(Fornecedor.id == fornecedor_id)
+        db.execute(stmt)
         db.commit()
         return None
     except IntegrityError as e:
         db.rollback()
         if e.orig and hasattr(e.orig, "sqlstate") and e.orig.sqlstate == "23503":
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="O fornecedor não pode ser removido pois possui registros relacionados."
             )
         raise e

@@ -7,7 +7,16 @@ class FornecedorBase(BaseModel):
     email: str = Field(..., max_length=254)
 
 class FornecedorCreate(FornecedorBase):
-    pass
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "nome": "Fornecedor Exemplo",
+                "cnpj": "12345678000199",
+                "telefone": "75999999999",
+                "email": "contato@example.com"
+            }
+        }
+    )
 
 class FornecedorUpdate(FornecedorBase):
     pass

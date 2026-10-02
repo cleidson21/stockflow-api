@@ -10,6 +10,7 @@ from app.models.produto import Produto
 from app.models.categoria import Categoria
 from app.models.fornecedor import Fornecedor
 from app.schemas.produto import ProdutoCreate, ProdutoUpdate, ProdutoResponse
+from app.schemas.erro import ErrorResponse, ValidationErrorResponse
 
 router = APIRouter(
     prefix="/produtos",
@@ -28,7 +29,17 @@ def validar_relacionamentos(db: Session, categoria_id: int, fornecedor_id: int):
             detail="Fornecedor não encontrado."
         )
 
-@router.post("", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=ProdutoResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {"model": ErrorResponse, "description": "Categoria ou Fornecedor não encontrado."},
+        409: {"model": ErrorResponse, "description": "Já existe um produto com este SKU ou falha de concorrência com FK."},
+        422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def criar_produto(produto_in: ProdutoCreate, db: Session = Depends(get_db)):
     validar_relacionamentos(db, produto_in.categoria_id, produto_in.fornecedor_id)
     
@@ -52,28 +63,48 @@ def criar_produto(produto_in: ProdutoCreate, db: Session = Depends(get_db)):
         if e.orig and hasattr(e.orig, "sqlstate"):
             if e.orig.sqlstate == "23505":
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_409_CONFLICT,
                     detail="Já existe um produto com este SKU."
                 )
             elif e.orig.sqlstate == "23503":
                 # Condição de corrida onde categoria ou fornecedor foi apagado concorrentemente
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_409_CONFLICT,
                     detail="Referência inválida para categoria ou fornecedor."
                 )
         raise e
 
-@router.get("/consultas/estoque-minimo", response_model=List[ProdutoResponse])
+@router.get(
+    "/consultas/estoque-minimo",
+    response_model=List[ProdutoResponse],
+    responses={
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def listar_produtos_estoque_minimo(db: Session = Depends(get_db)):
     stmt = select(Produto).where(Produto.quantidade_em_estoque <= Produto.estoque_minimo).order_by(Produto.id)
     return db.scalars(stmt).all()
 
-@router.get("", response_model=List[ProdutoResponse])
+@router.get(
+    "",
+    response_model=List[ProdutoResponse],
+    responses={
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def listar_produtos(db: Session = Depends(get_db)):
     stmt = select(Produto).order_by(Produto.id)
     return db.scalars(stmt).all()
 
-@router.get("/{produto_id}", response_model=ProdutoResponse)
+@router.get(
+    "/{produto_id}",
+    response_model=ProdutoResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Produto não encontrado."},
+        422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def buscar_produto(produto_id: int, db: Session = Depends(get_db)):
     produto = db.get(Produto, produto_id)
     if not produto:
@@ -83,7 +114,16 @@ def buscar_produto(produto_id: int, db: Session = Depends(get_db)):
         )
     return produto
 
-@router.put("/{produto_id}", response_model=ProdutoResponse)
+@router.put(
+    "/{produto_id}",
+    response_model=ProdutoResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Produto, Categoria ou Fornecedor não encontrado."},
+        409: {"model": ErrorResponse, "description": "Conflito de SKU duplicado ou falha de concorrência."},
+        422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def atualizar_produto(produto_id: int, produto_in: ProdutoUpdate, db: Session = Depends(get_db)):
     produto = db.get(Produto, produto_id)
     if not produto:
@@ -111,17 +151,26 @@ def atualizar_produto(produto_id: int, produto_in: ProdutoUpdate, db: Session = 
         if e.orig and hasattr(e.orig, "sqlstate"):
             if e.orig.sqlstate == "23505":
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_409_CONFLICT,
                     detail="Já existe um produto com este SKU."
                 )
             elif e.orig.sqlstate == "23503":
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_409_CONFLICT,
                     detail="Referência inválida para categoria ou fornecedor."
                 )
         raise e
 
-@router.delete("/{produto_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{produto_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        404: {"model": ErrorResponse, "description": "Produto não encontrado."},
+        409: {"model": ErrorResponse, "description": "O produto não pode ser removido pois possui movimentações relacionadas."},
+        422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def excluir_produto(produto_id: int, db: Session = Depends(get_db)):
     produto = db.get(Produto, produto_id)
     if not produto:
@@ -131,14 +180,16 @@ def excluir_produto(produto_id: int, db: Session = Depends(get_db)):
         )
     
     try:
-        db.delete(produto)
+        from sqlalchemy import delete
+        stmt = delete(Produto).where(Produto.id == produto_id)
+        db.execute(stmt)
         db.commit()
         return None
     except IntegrityError as e:
         db.rollback()
         if e.orig and hasattr(e.orig, "sqlstate") and e.orig.sqlstate == "23503":
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="O produto não pode ser removido pois possui movimentações relacionadas."
             )
         raise e

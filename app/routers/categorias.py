@@ -8,13 +8,23 @@ from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.categoria import Categoria
 from app.schemas.categoria import CategoriaCreate, CategoriaUpdate, CategoriaResponse
+from app.schemas.erro import ErrorResponse, ValidationErrorResponse
 
 router = APIRouter(
     prefix="/categorias",
     tags=["Categorias"]
 )
 
-@router.post("", response_model=CategoriaResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=CategoriaResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        409: {"model": ErrorResponse, "description": "Categoria já existe com este nome."},
+        422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def criar_categoria(categoria_in: CategoriaCreate, db: Session = Depends(get_db)):
     nova_categoria = Categoria(nome=categoria_in.nome)
     db.add(nova_categoria)
@@ -27,19 +37,33 @@ def criar_categoria(categoria_in: CategoriaCreate, db: Session = Depends(get_db)
         # Verificar o SQLSTATE original do driver psycopg
         if e.orig and hasattr(e.orig, "sqlstate") and e.orig.sqlstate == "23505":
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="Já existe uma categoria com este nome."
             )
         # Se for outro IntegrityError não previsto, repassa
         raise e
 
-@router.get("", response_model=List[CategoriaResponse])
+@router.get(
+    "",
+    response_model=List[CategoriaResponse],
+    responses={
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def listar_categorias(db: Session = Depends(get_db)):
     stmt = select(Categoria).order_by(Categoria.id)
     resultado = db.scalars(stmt).all()
     return resultado
 
-@router.get("/{categoria_id}", response_model=CategoriaResponse)
+@router.get(
+    "/{categoria_id}",
+    response_model=CategoriaResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Categoria não encontrada."},
+        422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def buscar_categoria(categoria_id: int, db: Session = Depends(get_db)):
     categoria = db.get(Categoria, categoria_id)
     if not categoria:
@@ -49,7 +73,16 @@ def buscar_categoria(categoria_id: int, db: Session = Depends(get_db)):
         )
     return categoria
 
-@router.put("/{categoria_id}", response_model=CategoriaResponse)
+@router.put(
+    "/{categoria_id}",
+    response_model=CategoriaResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Categoria não encontrada."},
+        409: {"model": ErrorResponse, "description": "Conflito de nome duplicado."},
+        422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def atualizar_categoria(categoria_id: int, categoria_in: CategoriaUpdate, db: Session = Depends(get_db)):
     categoria = db.get(Categoria, categoria_id)
     if not categoria:
@@ -67,12 +100,21 @@ def atualizar_categoria(categoria_id: int, categoria_in: CategoriaUpdate, db: Se
         db.rollback()
         if e.orig and hasattr(e.orig, "sqlstate") and e.orig.sqlstate == "23505":
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="Já existe uma categoria com este nome."
             )
         raise e
 
-@router.delete("/{categoria_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{categoria_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        404: {"model": ErrorResponse, "description": "Categoria não encontrada."},
+        409: {"model": ErrorResponse, "description": "A categoria não pode ser removida pois possui produtos relacionados."},
+        422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
+        500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
+    }
+)
 def excluir_categoria(categoria_id: int, db: Session = Depends(get_db)):
     categoria = db.get(Categoria, categoria_id)
     if not categoria:
@@ -82,14 +124,16 @@ def excluir_categoria(categoria_id: int, db: Session = Depends(get_db)):
         )
     
     try:
-        db.delete(categoria)
+        from sqlalchemy import delete
+        stmt = delete(Categoria).where(Categoria.id == categoria_id)
+        db.execute(stmt)
         db.commit()
         return None
     except IntegrityError as e:
         db.rollback()
         if e.orig and hasattr(e.orig, "sqlstate") and e.orig.sqlstate == "23503":
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="A categoria não pode ser removida pois possui produtos relacionados."
             )
         raise e

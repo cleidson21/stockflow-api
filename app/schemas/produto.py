@@ -12,7 +12,20 @@ class ProdutoBase(BaseModel):
     fornecedor_id: int
 
 class ProdutoCreate(ProdutoBase):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "nome": "Teclado",
+                "sku": "TEC-001",
+                "preco_custo": "100.00",
+                "preco_venda": "150.00",
+                "estoque_minimo": 5,
+                "categoria_id": 1,
+                "fornecedor_id": 1
+            }
+        }
+    )
 
 class ProdutoUpdate(ProdutoBase):
     model_config = ConfigDict(extra="forbid")

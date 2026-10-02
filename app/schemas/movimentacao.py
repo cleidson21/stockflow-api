@@ -11,7 +11,16 @@ class MovimentacaoCreate(BaseModel):
     tipo: TipoMovimentacao
     quantidade: int = Field(..., gt=0)
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "produto_id": 1,
+                "tipo": "ENTRADA",
+                "quantidade": 10
+            }
+        }
+    )
 
 class MovimentacaoResponse(BaseModel):
     id: int
