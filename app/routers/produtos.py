@@ -63,6 +63,11 @@ def criar_produto(produto_in: ProdutoCreate, db: Session = Depends(get_db)):
                 )
         raise e
 
+@router.get("/consultas/estoque-minimo", response_model=List[ProdutoResponse])
+def listar_produtos_estoque_minimo(db: Session = Depends(get_db)):
+    stmt = select(Produto).where(Produto.quantidade_em_estoque <= Produto.estoque_minimo).order_by(Produto.id)
+    return db.scalars(stmt).all()
+
 @router.get("", response_model=List[ProdutoResponse])
 def listar_produtos(db: Session = Depends(get_db)):
     stmt = select(Produto).order_by(Produto.id)

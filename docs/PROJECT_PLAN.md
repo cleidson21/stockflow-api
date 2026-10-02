@@ -334,32 +334,32 @@ Período planejado: 07/10 a 08/10.
 
 ### TSK-5.1 — Estoque mínimo
 
-- [ ] Criar consulta de produtos no estoque mínimo.
-- [ ] Incluir produtos abaixo do estoque mínimo.
-- [ ] Definir endpoint e parâmetros.
-- [ ] Documentar comportamento.
-- [ ] Testar limites.
+- [x] Criar consulta de produtos no estoque mínimo.
+- [x] Incluir produtos abaixo do estoque mínimo.
+- [x] Definir endpoint e parâmetros.
+- [x] Documentar comportamento.
+- [x] Testar limites.
 
 ### TSK-5.2 — Histórico por período
 
-- [ ] Definir parâmetros de data inicial e final.
-- [ ] Validar intervalos.
-- [ ] Filtrar movimentações.
-- [ ] Definir comportamento sem resultados.
-- [ ] Documentar endpoint.
+- [x] Definir parâmetros de data inicial e final.
+- [x] Validar intervalos.
+- [x] Filtrar movimentações.
+- [x] Definir comportamento sem resultados.
+- [x] Documentar endpoint.
 
 ### TSK-5.3 — Histórico por fornecedor
 
-- [ ] Implementar filtro compatível com o modelo relacional adotado.
-- [ ] Permitir combinação com período quando apropriado.
-- [ ] Validar fornecedor inexistente quando aplicável.
-- [ ] Documentar exemplos.
+- [x] Implementar filtro compatível com o modelo relacional adotado.
+- [x] Permitir combinação com período quando apropriado.
+- [x] Validar fornecedor inexistente quando aplicável.
+- [x] Documentar exemplos.
 
 ### TSK-5.4 — Consultas adicionais
 
-- [ ] Avaliar filtros adicionais realmente úteis.
-- [ ] Evitar funcionalidades sem valor para o desafio.
-- [ ] Implementar somente filtros justificados.
+- [x] Avaliar filtros adicionais realmente úteis.
+- [x] Evitar funcionalidades sem valor para o desafio.
+- [x] Implementar somente filtros justificados.
 
 ---
 

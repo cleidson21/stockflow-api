@@ -1,5 +1,5 @@
-from typing import List
-
+from typing import List, Optional
+from pydantic import AwareDatetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.produto import Produto
 from app.models.movimentacao import MovimentacaoEstoque
+from app.models.fornecedor import Fornecedor
 from app.schemas.movimentacao import MovimentacaoCreate, MovimentacaoResponse, TipoMovimentacao
 
 router = APIRouter(
@@ -53,9 +54,37 @@ def criar_movimentacao(mov_in: MovimentacaoCreate, db: Session = Depends(get_db)
         raise e
 
 
+
+
 @router.get("", response_model=List[MovimentacaoResponse])
-def listar_movimentacoes(db: Session = Depends(get_db)):
-    stmt = select(MovimentacaoEstoque).order_by(MovimentacaoEstoque.id)
+def listar_movimentacoes(
+    db: Session = Depends(get_db),
+    data_inicio: Optional[AwareDatetime] = None,
+    data_fim: Optional[AwareDatetime] = None,
+    fornecedor_id: Optional[int] = None
+):
+    if data_inicio and data_fim and data_inicio > data_fim:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="data_inicio não pode ser posterior a data_fim."
+        )
+
+    stmt = select(MovimentacaoEstoque)
+
+    if fornecedor_id is not None:
+        if not db.get(Fornecedor, fornecedor_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Fornecedor não encontrado."
+            )
+        stmt = stmt.where(MovimentacaoEstoque.fornecedor_id == fornecedor_id)
+
+    if data_inicio:
+        stmt = stmt.where(MovimentacaoEstoque.data >= data_inicio)
+    if data_fim:
+        stmt = stmt.where(MovimentacaoEstoque.data <= data_fim)
+
+    stmt = stmt.order_by(MovimentacaoEstoque.id)
     return db.scalars(stmt).all()
 
 @router.get("/{movimentacao_id}", response_model=MovimentacaoResponse)
