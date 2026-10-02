@@ -6,10 +6,11 @@ app = FastAPI(
     version="0.1.0",
 )
 
-from app.routers import categorias, fornecedores, produtos
+from app.routers import categorias, fornecedores, produtos, movimentacoes
 app.include_router(categorias.router)
 app.include_router(fornecedores.router)
 app.include_router(produtos.router)
+app.include_router(movimentacoes.router)
 
 
 @app.get("/")

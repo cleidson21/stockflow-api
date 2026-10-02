@@ -292,37 +292,37 @@ Período planejado: 04/10 a 06/10.
 
 ### TSK-4.2 — Imutabilidade
 
-- [ ] Implementar criação.
-- [ ] Implementar consulta.
-- [ ] Não disponibilizar atualização.
-- [ ] Não disponibilizar exclusão.
-- [ ] Confirmar que a API respeita a imutabilidade.
+- [x] Implementar criação.
+- [x] Implementar consulta.
+- [x] Não disponibilizar atualização.
+- [x] Não disponibilizar exclusão.
+- [x] Confirmar que a API respeita a imutabilidade.
 
 ### TSK-4.3 — Entrada de estoque
 
-- [ ] Validar quantidade.
-- [ ] Criar movimentação.
-- [ ] Incrementar estoque.
-- [ ] Garantir atomicidade da operação.
-- [ ] Testar sucesso e falha.
+- [x] Validar quantidade.
+- [x] Criar movimentação.
+- [x] Incrementar estoque.
+- [x] Garantir atomicidade da operação.
+- [x] Testar sucesso e falha.
 
 ### TSK-4.4 — Saída de estoque
 
-- [ ] Validar quantidade.
-- [ ] Validar estoque disponível.
-- [ ] Impedir estoque negativo.
-- [ ] Criar movimentação.
-- [ ] Decrementar estoque.
-- [ ] Garantir atomicidade.
-- [ ] Testar sucesso e falha.
+- [x] Validar quantidade.
+- [x] Validar estoque disponível.
+- [x] Impedir estoque negativo.
+- [x] Criar movimentação.
+- [x] Decrementar estoque.
+- [x] Garantir atomicidade.
+- [x] Testar sucesso e falha.
 
 ### TSK-4.5 — Transações
 
-- [ ] Entender commit.
-- [ ] Entender rollback.
-- [ ] Entender atomicidade.
-- [ ] Garantir que estoque e histórico não possam divergir.
-- [ ] Documentar a decisão transacional.
+- [x] Entender commit.
+- [x] Entender rollback.
+- [x] Entender atomicidade.
+- [x] Garantir que estoque e histórico não possam divergir.
+- [x] Documentar a decisão transacional.
 
 ---
 
