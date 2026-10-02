@@ -284,11 +284,11 @@ Período planejado: 04/10 a 06/10.
 
 ### TSK-4.1 — Modelo de movimentação
 
-- [ ] Definir campos.
-- [ ] Definir relacionamento com Produto.
-- [ ] Definir representação de entrada e saída.
-- [ ] Definir timestamp.
-- [ ] Criar migration.
+- [x] Definir campos.
+- [x] Definir relacionamento com Produto.
+- [x] Definir representação de entrada e saída.
+- [x] Definir timestamp.
+- [x] Criar migration.
 
 ### TSK-4.2 — Imutabilidade
 
