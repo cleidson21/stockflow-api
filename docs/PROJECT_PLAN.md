@@ -403,15 +403,15 @@ Período planejado: 09/10 a 10/10.
 
 ### TSK-6.5 — README
 
-- [ ] Documentar pré-requisitos.
-- [ ] Documentar configuração.
-- [ ] Documentar criação do banco.
-- [ ] Documentar migrations.
-- [ ] Documentar execução da API.
-- [ ] Documentar testes.
-- [ ] Documentar acesso ao Swagger.
-- [ ] Descrever arquitetura.
-- [ ] Descrever principais regras de negócio.
+- [x] Documentar pré-requisitos.
+- [x] Documentar configuração.
+- [x] Documentar criação do banco.
+- [x] Documentar migrations.
+- [x] Documentar execução da API.
+- [x] Documentar testes.
+- [x] Documentar acesso ao Swagger.
+- [x] Descrever arquitetura.
+- [x] Descrever principais regras de negócio.
 
 ---
 
