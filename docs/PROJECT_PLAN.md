@@ -423,9 +423,9 @@ Período planejado: 11/10 a 13/10.
 
 ### TSK-7.1 — Testes automatizados
 
-- [ ] Definir estratégia de testes.
-- [ ] Configurar framework.
-- [ ] Criar ambiente de teste isolado.
+- [x] Definir estratégia de testes.
+- [x] Configurar framework.
+- [x] Criar ambiente de teste isolado.
 - [ ] Testar CRUD.
 - [ ] Testar unicidade.
 - [ ] Testar movimentações.
