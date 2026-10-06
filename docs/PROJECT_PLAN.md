@@ -428,9 +428,9 @@ Período planejado: 11/10 a 13/10.
 - [x] Criar ambiente de teste isolado.
 - [x] Testar CRUD.
 - [x] Testar unicidade.
-- [ ] Testar movimentações.
-- [ ] Testar estoque insuficiente.
-- [ ] Testar imutabilidade.
+- [x] Testar movimentações.
+- [x] Testar estoque insuficiente.
+- [x] Testar imutabilidade.
 - [ ] Testar consultas avançadas.
 - [ ] Testar erros relevantes.
 
