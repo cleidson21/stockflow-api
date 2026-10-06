@@ -426,8 +426,8 @@ Período planejado: 11/10 a 13/10.
 - [x] Definir estratégia de testes.
 - [x] Configurar framework.
 - [x] Criar ambiente de teste isolado.
-- [ ] Testar CRUD.
-- [ ] Testar unicidade.
+- [x] Testar CRUD.
+- [x] Testar unicidade.
 - [ ] Testar movimentações.
 - [ ] Testar estoque insuficiente.
 - [ ] Testar imutabilidade.
