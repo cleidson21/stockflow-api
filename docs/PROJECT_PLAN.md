@@ -431,8 +431,8 @@ Período planejado: 11/10 a 13/10.
 - [x] Testar movimentações.
 - [x] Testar estoque insuficiente.
 - [x] Testar imutabilidade.
-- [ ] Testar consultas avançadas.
-- [ ] Testar erros relevantes.
+- [x] Testar consultas avançadas.
+- [x] Testar erros relevantes.
 
 ### TSK-7.2 — Integração contínua
 
