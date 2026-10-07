@@ -34,7 +34,19 @@ def get_current_user(
         raise exception_unauthorized
         
     usuario = db.scalar(select(Usuario).where(Usuario.username == username))
+    db.commit() # Fecha a transação implícita gerada pelo select
+    
     if usuario is None:
         raise exception_unauthorized
         
     return usuario
+
+def require_roles(*allowed_roles: str):
+    def role_checker(current_user: Usuario = Depends(get_current_user)):
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Você não possui permissão para executar esta operação."
+            )
+        return current_user
+    return role_checker

@@ -457,9 +457,9 @@ Período planejado: 11/10 a 13/10.
 - [x] Discutir JWT.
 - [x] Definir modelo de usuário.
 - [x] Definir autenticação.
-- [ ] Definir autorização por função se viável.
-- [ ] Proteger rotas apropriadas.
-- [ ] Testar acesso autorizado e não autorizado.
+- [x] Definir autorização por função se viável.
+- [x] Proteger rotas apropriadas.
+- [x] Testar acesso autorizado e não autorizado.
 
 ---
 

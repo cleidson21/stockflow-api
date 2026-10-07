@@ -11,6 +11,8 @@ from app.models.categoria import Categoria
 from app.models.fornecedor import Fornecedor
 from app.schemas.produto import ProdutoCreate, ProdutoUpdate, ProdutoResponse
 from app.schemas.erro import ErrorResponse, ValidationErrorResponse
+from app.security.auth import require_roles
+from app.models.usuario import Role
 
 router = APIRouter(
     prefix="/produtos",
@@ -31,6 +33,7 @@ def validar_relacionamentos(db: Session, categoria_id: int, fornecedor_id: int):
 
 @router.post(
     "",
+    dependencies=[Depends(require_roles(Role.ADMIN))],
     response_model=ProdutoResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -76,6 +79,7 @@ def criar_produto(produto_in: ProdutoCreate, db: Session = Depends(get_db)):
 
 @router.get(
     "/consultas/estoque-minimo",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=List[ProdutoResponse],
     responses={
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
@@ -87,6 +91,7 @@ def listar_produtos_estoque_minimo(db: Session = Depends(get_db)):
 
 @router.get(
     "",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=List[ProdutoResponse],
     responses={
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
@@ -98,6 +103,7 @@ def listar_produtos(db: Session = Depends(get_db)):
 
 @router.get(
     "/{produto_id}",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=ProdutoResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Produto não encontrado."},
@@ -116,6 +122,7 @@ def buscar_produto(produto_id: int, db: Session = Depends(get_db)):
 
 @router.put(
     "/{produto_id}",
+    dependencies=[Depends(require_roles(Role.ADMIN))],
     response_model=ProdutoResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Produto, Categoria ou Fornecedor não encontrado."},
@@ -163,6 +170,7 @@ def atualizar_produto(produto_id: int, produto_in: ProdutoUpdate, db: Session = 
 
 @router.delete(
     "/{produto_id}",
+    dependencies=[Depends(require_roles(Role.ADMIN))],
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         404: {"model": ErrorResponse, "description": "Produto não encontrado."},

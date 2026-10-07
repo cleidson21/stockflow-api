@@ -9,6 +9,8 @@ from app.database import get_db
 from app.models.fornecedor import Fornecedor
 from app.schemas.fornecedor import FornecedorCreate, FornecedorUpdate, FornecedorResponse
 from app.schemas.erro import ErrorResponse, ValidationErrorResponse
+from app.security.auth import require_roles
+from app.models.usuario import Role
 
 router = APIRouter(
     prefix="/fornecedores",
@@ -17,6 +19,7 @@ router = APIRouter(
 
 @router.post(
     "",
+    dependencies=[Depends(require_roles(Role.ADMIN))],
     response_model=FornecedorResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -59,6 +62,7 @@ def criar_fornecedor(fornecedor_in: FornecedorCreate, db: Session = Depends(get_
 
 @router.get(
     "",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=List[FornecedorResponse],
     responses={
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
@@ -70,6 +74,7 @@ def listar_fornecedores(db: Session = Depends(get_db)):
 
 @router.get(
     "/{fornecedor_id}",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=FornecedorResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Fornecedor não encontrado."},
@@ -88,6 +93,7 @@ def buscar_fornecedor(fornecedor_id: int, db: Session = Depends(get_db)):
 
 @router.put(
     "/{fornecedor_id}",
+    dependencies=[Depends(require_roles(Role.ADMIN))],
     response_model=FornecedorResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Fornecedor não encontrado."},
@@ -134,6 +140,7 @@ def atualizar_fornecedor(fornecedor_id: int, fornecedor_in: FornecedorUpdate, db
 
 @router.delete(
     "/{fornecedor_id}",
+    dependencies=[Depends(require_roles(Role.ADMIN))],
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         404: {"model": ErrorResponse, "description": "Fornecedor não encontrado."},

@@ -16,6 +16,8 @@ def add_exception_handlers(app: FastAPI):
             error_cat = "bad_request"
         elif status_code == 401:
             error_cat = "unauthorized"
+        elif status_code == 403:
+            error_cat = "forbidden"
         elif status_code == 404:
             error_cat = "not_found"
         elif status_code == 409:

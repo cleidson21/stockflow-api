@@ -122,7 +122,7 @@ def test_token_valido_usuario_deletado():
             
     assert excinfo.value.status_code == 401
 
-def test_token_ausente_gera_401_no_endpoint(client):
+def test_token_ausente_gera_401_no_endpoint(unauthenticated_client):
     from fastapi import APIRouter
     from app.main import app
     
@@ -133,7 +133,7 @@ def test_token_ausente_gera_401_no_endpoint(client):
         
     app.include_router(router)
     
-    response = client.get("/test-auth")
+    response = unauthenticated_client.get("/test-auth")
     assert response.status_code == 401
 
 def test_token_valido_retorna_usuario_atual(client, create_test_users):
@@ -186,7 +186,7 @@ def test_settings_fails_without_jwt_secret(monkeypatch):
         )
     assert "jwt_secret_key" in str(excinfo.value)
 
-def test_www_authenticate_header_in_401(client):
+def test_www_authenticate_header_in_401(unauthenticated_client):
     from fastapi import APIRouter
     from app.main import app
     
@@ -198,12 +198,12 @@ def test_www_authenticate_header_in_401(client):
     app.include_router(router)
     
     # Ausente
-    response = client.get("/test-auth-header")
+    response = unauthenticated_client.get("/test-auth-header")
     assert response.status_code == 401
     assert response.headers.get("WWW-Authenticate") == "Bearer"
     
     # Invalido
-    response = client.get("/test-auth-header", headers={"Authorization": "Bearer bad_token"})
+    response = unauthenticated_client.get("/test-auth-header", headers={"Authorization": "Bearer bad_token"})
     assert response.status_code == 401
     assert response.headers.get("WWW-Authenticate") == "Bearer"
     
@@ -213,6 +213,6 @@ def test_www_authenticate_header_in_401(client):
     payload = {"sub": "admin", "exp": expire}
     token = jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
     
-    response = client.get("/test-auth-header", headers={"Authorization": f"Bearer {token}"})
+    response = unauthenticated_client.get("/test-auth-header", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 401
     assert response.headers.get("WWW-Authenticate") == "Bearer"

@@ -2,7 +2,7 @@ import threading
 from fastapi.testclient import TestClient
 from app.main import app
 
-def test_concorrencia_saida_simultanea(client):
+def test_concorrencia_saida_simultanea(client, admin_headers):
     cat_id = client.post("/categorias", json={"nome": "Cat Concorrencia"}).json()["id"]
     forn_id = client.post("/fornecedores", json={
         "nome": "Forn Concorrencia", "cnpj": "12345678901234", "telefone": "11999999999", "email": "conc@test.com"
@@ -22,6 +22,7 @@ def test_concorrencia_saida_simultanea(client):
 
     def worker():
         local_client = TestClient(app, raise_server_exceptions=False)
+        local_client.headers.update(admin_headers)
         try:
             barrier.wait(timeout=5)
         except threading.BrokenBarrierError:

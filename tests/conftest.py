@@ -42,6 +42,42 @@ def clean_database(verify_test_database):
     _clean()
 
 @pytest.fixture
-def client():
+def client(admin_headers):
+    with TestClient(app) as test_client:
+        test_client.headers.update(admin_headers)
+        yield test_client
+
+@pytest.fixture
+def unauthenticated_client():
     with TestClient(app) as test_client:
         yield test_client
+
+@pytest.fixture
+def admin_headers():
+    from app.database import SessionLocal
+    from app.models.usuario import Usuario, Role
+    from app.security.passwords import hash_password
+    from app.security.jwt import create_access_token
+    
+    with SessionLocal() as db:
+        admin = Usuario(username="test_admin", password_hash=hash_password("admin_pass"), role=Role.ADMIN)
+        db.add(admin)
+        db.commit()
+    
+    token = create_access_token("test_admin")
+    return {"Authorization": f"Bearer {token}"}
+
+@pytest.fixture
+def funcionario_headers():
+    from app.database import SessionLocal
+    from app.models.usuario import Usuario, Role
+    from app.security.passwords import hash_password
+    from app.security.jwt import create_access_token
+    
+    with SessionLocal() as db:
+        func = Usuario(username="test_func", password_hash=hash_password("func_pass"), role=Role.FUNCIONARIO)
+        db.add(func)
+        db.commit()
+    
+    token = create_access_token("test_func")
+    return {"Authorization": f"Bearer {token}"}

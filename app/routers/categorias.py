@@ -9,6 +9,8 @@ from app.database import get_db
 from app.models.categoria import Categoria
 from app.schemas.categoria import CategoriaCreate, CategoriaUpdate, CategoriaResponse
 from app.schemas.erro import ErrorResponse, ValidationErrorResponse
+from app.security.auth import require_roles
+from app.models.usuario import Role
 
 router = APIRouter(
     prefix="/categorias",
@@ -17,6 +19,7 @@ router = APIRouter(
 
 @router.post(
     "",
+    dependencies=[Depends(require_roles(Role.ADMIN))],
     response_model=CategoriaResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -45,6 +48,7 @@ def criar_categoria(categoria_in: CategoriaCreate, db: Session = Depends(get_db)
 
 @router.get(
     "",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=List[CategoriaResponse],
     responses={
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
@@ -57,6 +61,7 @@ def listar_categorias(db: Session = Depends(get_db)):
 
 @router.get(
     "/{categoria_id}",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=CategoriaResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Categoria não encontrada."},
@@ -75,6 +80,7 @@ def buscar_categoria(categoria_id: int, db: Session = Depends(get_db)):
 
 @router.put(
     "/{categoria_id}",
+    dependencies=[Depends(require_roles(Role.ADMIN))],
     response_model=CategoriaResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Categoria não encontrada."},
@@ -107,6 +113,7 @@ def atualizar_categoria(categoria_id: int, categoria_in: CategoriaUpdate, db: Se
 
 @router.delete(
     "/{categoria_id}",
+    dependencies=[Depends(require_roles(Role.ADMIN))],
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         404: {"model": ErrorResponse, "description": "Categoria não encontrada."},

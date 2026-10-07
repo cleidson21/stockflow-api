@@ -11,6 +11,8 @@ from app.models.movimentacao import MovimentacaoEstoque
 from app.models.fornecedor import Fornecedor
 from app.schemas.movimentacao import MovimentacaoCreate, MovimentacaoResponse, TipoMovimentacao
 from app.schemas.erro import ErrorResponse, ValidationErrorResponse
+from app.security.auth import require_roles
+from app.models.usuario import Role
 
 router = APIRouter(
     prefix="/movimentacoes",
@@ -19,6 +21,7 @@ router = APIRouter(
 
 @router.post(
     "",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=MovimentacaoResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
@@ -30,38 +33,41 @@ router = APIRouter(
 )
 def criar_movimentacao(mov_in: MovimentacaoCreate, db: Session = Depends(get_db)):
     try:
-        with db.begin():
-            stmt = select(Produto).where(Produto.id == mov_in.produto_id).with_for_update()
-            produto = db.scalars(stmt).first()
-            
-            if not produto:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Produto não encontrado."
-                )
-            
-            if mov_in.tipo == TipoMovimentacao.ENTRADA:
-                produto.quantidade_em_estoque += mov_in.quantidade
-            elif mov_in.tipo == TipoMovimentacao.SAIDA:
-                if mov_in.quantidade > produto.quantidade_em_estoque:
-                    raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail="Estoque insuficiente para a saída solicitada."
-                    )
-                produto.quantidade_em_estoque -= mov_in.quantidade
-                
-            nova_movimentacao = MovimentacaoEstoque(
-                tipo=mov_in.tipo.value,
-                quantidade=mov_in.quantidade,
-                produto_id=produto.id,
-                fornecedor_id=produto.fornecedor_id
+        stmt = select(Produto).where(Produto.id == mov_in.produto_id).with_for_update()
+        produto = db.scalars(stmt).first()
+        
+        if not produto:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Produto não encontrado."
             )
-            db.add(nova_movimentacao)
+        
+        if mov_in.tipo == TipoMovimentacao.ENTRADA:
+            produto.quantidade_em_estoque += mov_in.quantidade
+        elif mov_in.tipo == TipoMovimentacao.SAIDA:
+            if mov_in.quantidade > produto.quantidade_em_estoque:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Estoque insuficiente para a saída solicitada."
+                )
+            produto.quantidade_em_estoque -= mov_in.quantidade
+            
+        nova_movimentacao = MovimentacaoEstoque(
+            tipo=mov_in.tipo.value,
+            quantidade=mov_in.quantidade,
+            produto_id=produto.id,
+            fornecedor_id=produto.fornecedor_id
+        )
+        db.add(nova_movimentacao)
+        db.commit()
         
         db.refresh(nova_movimentacao)
         return nova_movimentacao
     except IntegrityError as e:
-        # O contexto with db.begin() já realizou o rollback.
+        db.rollback()
+        raise e
+    except Exception as e:
+        db.rollback()
         raise e
 
 
@@ -69,6 +75,7 @@ def criar_movimentacao(mov_in: MovimentacaoCreate, db: Session = Depends(get_db)
 
 @router.get(
     "",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=List[MovimentacaoResponse],
     responses={
         400: {"model": ErrorResponse, "description": "data_inicio não pode ser posterior a data_fim."},
@@ -109,6 +116,7 @@ def listar_movimentacoes(
 
 @router.get(
     "/{movimentacao_id}",
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=MovimentacaoResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Movimentação não encontrada."},
