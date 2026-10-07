@@ -436,9 +436,9 @@ Período planejado: 11/10 a 13/10.
 
 ### TSK-7.2 — Integração contínua
 
-- [ ] Avaliar GitHub Actions.
-- [ ] Executar testes automaticamente.
-- [ ] Garantir falha do workflow quando testes falharem.
+- [x] Avaliar GitHub Actions.
+- [x] Executar testes automaticamente.
+- [x] Garantir falha do workflow quando testes falharem.
 
 ### TSK-7.3 — Concorrência
 

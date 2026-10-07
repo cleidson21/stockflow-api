@@ -230,8 +230,8 @@ A API possui um empacotamento restritivo de exceções e bloqueia vazamento de S
 
 ## Estado dos testes
 
-Houve validação funcional durante o desenvolvimento para atestar as regras e as modelagens.
-A suíte automatizada permanente ainda será criada na Fase 7.
+A aplicação possui uma suíte automatizada permanente baseada no `pytest`, atestando as lógicas de domínio, unicidade, movimentações transacionais, regras restritas (extra="forbid") e erros estruturados. A suíte atua obrigatoriamente sobre um banco de dados real PostgreSQL exclusivo (`stockflow_test`) e se protege contra mutações externas.
+Os testes automatizados são executados também via GitHub Actions.
 
 ---
 
