@@ -447,9 +447,9 @@ Período planejado: 11/10 a 13/10.
 - [x] Entender lock otimista.
 - [x] Analisar estratégia apropriada.
 - [x] Registrar decisão antes da implementação.
-- [ ] Implementar controle de concorrência.
-- [ ] Testar saídas simultâneas.
-- [ ] Confirmar impossibilidade de estoque negativo.
+- [x] Implementar controle de concorrência.
+- [x] Testar saídas simultâneas.
+- [x] Confirmar impossibilidade de estoque negativo.
 
 ### TSK-7.4 — Autenticação e autorização
 
