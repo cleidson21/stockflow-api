@@ -1139,7 +1139,7 @@ Se duas ou mais requisições tentarem movimentar o estoque do mesmo Produto sim
 3. **Lock Pessimista (FOR UPDATE)**: Travar explicitamente a linha do Produto para leitura e atualização exclusivas.
 
 ### Decisão
-Toda criação de Movimentação ocorrerá dentro de **UMA única transação**. 
+Toda criação de Movimentação ocorrerá dentro de **UMA única transação**.
 A unidade de concorrência será a **linha do Produto**.
 A linha do Produto afetado será obtida com bloqueio pessimista: `SELECT ... FOR UPDATE` aliado ao isolamento padrão `READ COMMITTED` do PostgreSQL.
 
@@ -1291,6 +1291,67 @@ O StockFlow adotará a abordagem **Síncrona** utilizando o SQLAlchemy 2.x e o d
 - Utilizamos pacotes `SQLAlchemy>=2.0` e `psycopg[binary]`.
 - A engine e a `Session` (e eventuais endpoints que dependam diretamente da sessão) não precisarão das diretivas `async` / `await`.
 - A arquitetura ganha clareza, perdendo apenas o teto máximo de concorrência I/O, o que é plenamente aceitável. Poderemos reavaliar e refatorar futuramente se surgirem requisitos de escala concretos que engarrafem as threads de serviço síncronas.
+
+---
+
+## DEC-034 — Autenticação e Autorização via JWT e RBAC
+
+Status: ACCEPTED
+
+### Contexto
+
+O desafio propõe a inclusão de controle de acesso (Autenticação e Autorização) como um diferencial opcional. Avaliou-se implementar isso de forma a resguardar a integridade dos testes e da base funcional já pronta.
+
+### Decisão
+
+Implementaremos o diferencial opcional de autenticação e autorização RBAC (Role-Based Access Control).
+
+### Detalhamento da Decisão
+
+1. **Entidade Usuario:**
+   Possuirá `id`, `username` (UNIQUE), `password_hash` e `role`.
+
+2. **Roles:**
+   Serão adotados `ADMIN` e `FUNCIONARIO`.
+
+3. **Hashing:**
+   Utilizar-se-á `pwdlib` com `Argon2` (alinhado com a documentação do FastAPI), evitando `passlib`/`bcrypt` como escolha primária. As senhas nunca serão persistidas em texto plano.
+
+4. **JWT:**
+   Uso de `PyJWT` emitindo apenas um *Access Token* (sem *refresh token* nesta versão). Claims limitados a `sub` e `exp`. Não armazenaremos senha, hash ou secrets no payload do JWT. O *role* do JWT não servirá como fonte autoritativa de permissões. JWT é **ASSINADO**, não criptografado por padrão.
+
+5. **Lógica de `get_current_user`:**
+   Validará a assinatura e expiração do JWT. Lerá o `sub` e, com isso, consultará o usuário em banco para obter o *role* persistido de forma segura e atualizada, centralizando a autorização no estado atual do banco, e não no JWT.
+
+6. **Bootstrap:**
+   NÃO será criado usuário de forma automática no startup. NÃO será usado `ADMIN_PASSWORD` permanente no startup. NÃO será criado registro público. Um script ou comando CLI administrativo será concebido futuramente para criar usuários interagindo pelo terminal, com senha solicitada e hash persistido.
+
+7. **Matriz de Permissões (RBAC):**
+   - **ADMIN**: Permissão plena em todas as rotas de negócio.
+   - **FUNCIONARIO**: Permissão apenas a *read-only* em catálogos (`GET Categorias`, `GET Fornecedores`, `GET Produtos`), às Consultas Avançadas, e permissão completa na rotina de Movimentações (`POST Movimentações`, `GET Movimentações`). Bloqueado em criar/editar/excluir (`POST/PUT/DELETE`) qualquer cadastro essencial.
+
+8. **Rotas Públicas Preservadas:**
+   `GET /`, `GET /health`, `POST /auth/login`, `/docs` e `/openapi.json` continuarão desimpedidas.
+
+9. **Convenções de Status HTTP:**
+   - `401 Unauthorized`: Credencial ausente, inválida, expirada, ou usuário do token deletado/inexistente.
+   - `403 Forbidden`: Identidade autenticada com sucesso, mas cujo `role` veta o uso do recurso.
+
+10. **Segurança do Secret:**
+   `JWT_SECRET_KEY` será lido invariavelmente via ambiente. `JWT_ALGORITHM` poderá ser HS256. `ACCESS_TOKEN_EXPIRE_MINUTES` será configurado. O Secret real não será injetado ou versionado.
+
+11. **Estratégia de Testes:**
+   O *TestClient* comum será provisionado para logar e enviar credenciais de `ADMIN` em todas as *fixtures* existentes, evitando reescrever semanticamente os 67 testes legados. Ademais, rotinas exclusivas verificarão: login, senha incorreta, token ausente, token inválido, expirado, 401 e controle 403.
+
+### Justificativa
+
+Esta matriz proporciona um diferencial complexo com clareza conceitual que sustenta forte defesa técnica. Optar por buscar o Role no banco sob demanda mitiga vulnerabilidades de tokens defasados, garantindo autoridade máxima do BD.
+
+### Consequências
+
+Haverá a criação de modelo (`Usuario`), migração atrelada, e os testes legados necessitarão de injeção de Headers (`Bearer`).
+
+---
 
 ## Regra para novas decisões
 

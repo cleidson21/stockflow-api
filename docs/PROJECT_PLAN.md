@@ -454,7 +454,7 @@ Período planejado: 11/10 a 13/10.
 ### TSK-7.4 — Autenticação e autorização
 
 - [ ] Implementar somente se os requisitos obrigatórios estiverem estáveis.
-- [ ] Discutir JWT.
+- [x] Discutir JWT.
 - [ ] Definir modelo de usuário.
 - [ ] Definir autenticação.
 - [ ] Definir autorização por função se viável.
