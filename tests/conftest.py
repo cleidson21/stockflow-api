@@ -34,6 +34,7 @@ def clean_database(verify_test_database):
                 conn.execute(text("DELETE FROM produtos"))
                 conn.execute(text("DELETE FROM fornecedores"))
                 conn.execute(text("DELETE FROM categorias"))
+                conn.execute(text("DELETE FROM usuarios"))
 
     _clean()
     yield

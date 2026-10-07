@@ -3,11 +3,13 @@ from app.models.categoria import Categoria
 from app.models.fornecedor import Fornecedor
 from app.models.produto import Produto
 from app.models.movimentacao import MovimentacaoEstoque
+from app.models.usuario import Usuario
 
 __all__ = [
     "Base",
     "Categoria",
     "Fornecedor",
     "Produto",
-    "MovimentacaoEstoque"
+    "MovimentacaoEstoque",
+    "Usuario"
 ]

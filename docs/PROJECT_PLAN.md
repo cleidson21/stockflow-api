@@ -455,7 +455,7 @@ Período planejado: 11/10 a 13/10.
 
 - [ ] Implementar somente se os requisitos obrigatórios estiverem estáveis.
 - [x] Discutir JWT.
-- [ ] Definir modelo de usuário.
+- [x] Definir modelo de usuário.
 - [ ] Definir autenticação.
 - [ ] Definir autorização por função se viável.
 - [ ] Proteger rotas apropriadas.
