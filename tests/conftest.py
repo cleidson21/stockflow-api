@@ -3,7 +3,8 @@ import pytest
 from sqlalchemy import text
 
 # Configurar o banco de dados para testes antes dos imports da aplicação
-os.environ["DB_NAME"] = "stockflow_test"
+os.environ.setdefault("DB_NAME", "stockflow_test")
+os.environ.setdefault("JWT_SECRET_KEY", "stockflow_test_secret_only_for_automated_tests_123456")
 
 from fastapi.testclient import TestClient
 from app.main import app

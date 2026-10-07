@@ -6,9 +6,10 @@ app = FastAPI(
     version="0.1.0",
 )
 
-from app.routers import categorias, fornecedores, produtos, movimentacoes
+from app.routers import categorias, fornecedores, produtos, movimentacoes, auth
 from app.exceptions import add_exception_handlers
 
+app.include_router(auth.router)
 app.include_router(categorias.router)
 app.include_router(fornecedores.router)
 app.include_router(produtos.router)

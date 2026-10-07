@@ -1,0 +1,40 @@
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+import jwt
+from app.database import get_db
+from app.models.usuario import Usuario
+from app.security.jwt import decode_access_token
+from app.exceptions import logger
+
+security = HTTPBearer(auto_error=False)
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    db: Session = Depends(get_db)
+) -> Usuario:
+    exception_unauthorized = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Credenciais inválidas.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    if credentials is None:
+        raise exception_unauthorized
+        
+    try:
+        payload = decode_access_token(credentials.credentials)
+        username: str = payload.get("sub")
+        if username is None:
+            raise exception_unauthorized
+    except jwt.ExpiredSignatureError:
+        raise exception_unauthorized
+    except jwt.InvalidTokenError:
+        raise exception_unauthorized
+        
+    usuario = db.scalar(select(Usuario).where(Usuario.username == username))
+    if usuario is None:
+        raise exception_unauthorized
+        
+    return usuario

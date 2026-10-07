@@ -31,6 +31,9 @@ jobs:
       DB_NAME: stockflow_test
       DB_USER: stockflow_app
       DB_PASSWORD: stockflow_test_password
+      JWT_SECRET_KEY: stockflow_ci_test_secret_only_for_runner_123456
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
 
     steps:
     - name: Checkout repository

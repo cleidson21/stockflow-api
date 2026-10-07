@@ -14,6 +14,8 @@ def add_exception_handlers(app: FastAPI):
         status_code = exc.status_code
         if status_code == 400:
             error_cat = "bad_request"
+        elif status_code == 401:
+            error_cat = "unauthorized"
         elif status_code == 404:
             error_cat = "not_found"
         elif status_code == 409:
@@ -25,6 +27,7 @@ def add_exception_handlers(app: FastAPI):
 
         return JSONResponse(
             status_code=status_code,
+            headers=getattr(exc, "headers", None),
             content={
                 "status": status_code,
                 "error": error_cat,
