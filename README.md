@@ -18,6 +18,8 @@ A aplicação faz uso exclusivamente das seguintes ferramentas, sem abstrações
 - **Migrations:** Alembic
 - **Validação e Configurações:** Pydantic e pydantic-settings
 - **Servidor ASGI:** Uvicorn
+- **Hashing:** pwdlib[argon2] (hash e verificação de senha)
+- **Autenticação:** PyJWT (criação e validação de access tokens JWT)
 
 ---
 
@@ -47,6 +49,8 @@ CREATE DATABASE stockflow OWNER stockflow_app;
 
 ## Instalação e Configuração de Ambiente
 
+Siga esta ordem exata para preparar o ambiente:
+
 1. Clone o repositório:
    ```bash
    git clone https://github.com/cleidson21/stockflow-api.git
@@ -65,54 +69,87 @@ CREATE DATABASE stockflow OWNER stockflow_app;
      .venv\Scripts\activate
      ```
 
-3. Instale as dependências oficiais:
+3. Instale as dependências:
    ```bash
    pip install -r requirements.txt
    ```
 
 4. Configure as variáveis de ambiente:
    - Copie o arquivo base: `cp .env.example .env`
-   - O arquivo `.env.example` serve apenas como gabarito (não contém dados sensíveis reais). O arquivo `.env` gerado é inserido automaticamente no `.gitignore` para não ser versionado e deve ser preenchido com suas configurações:
+   - Preencha os dados do `.env`. Ele não deve ser versionado.
    ```ini
    DB_HOST=127.0.0.1
    DB_PORT=5432
    DB_NAME=stockflow
    DB_USER=stockflow_app
    DB_PASSWORD=<senha-local>
+
+   JWT_SECRET_KEY=CHANGE_ME_WITH_A_RANDOM_SECRET
+   JWT_ALGORITHM=HS256
+   ACCESS_TOKEN_EXPIRE_MINUTES=60
+   ```
+   *Nota sobre o JWT:* `JWT_SECRET_KEY` é obrigatório, requer um comprimento mínimo, deve ser um segredo forte e nunca versionado (você pode gerar um valor com `openssl rand -hex 32` localmente). `JWT_ALGORITHM` usa HS256. `ACCESS_TOKEN_EXPIRE_MINUTES` define a duração do access token (60 minutos por padrão).
+
+5. Aplique as migrações estruturais do banco de dados (Alembic):
+   ```bash
+   alembic upgrade head
+   ```
+
+6. Crie o primeiro usuário administrativo (necessário para usar as rotas protegidas):
+   ```bash
+   python -m app.cli.create_user --username admin --role ADMIN
+   ```
+   *(A senha será solicitada interativamente no terminal por segurança. Ela é armazenada somente como hash Argon2 e o username deve ser único. Você também pode criar um FUNCIONARIO informando `--role FUNCIONARIO`).*
+
+7. Inicie o servidor:
+   ```bash
+   python -m uvicorn app.main:app --reload
    ```
 
 ---
 
-## Migrations (Estrutura do Banco)
+## Autenticação, Segurança JWT e RBAC
 
-O esquema do banco de dados é controlado via **Alembic**, garantindo previsibilidade sobre o modelo final de dados. *(O modelo automático `Base.metadata.create_all()` não é utilizado).*
+A aplicação possui um controle rigoroso de acesso e perfis.
 
-Para aplicar a estrutura no banco de dados previamente configurado:
+### Rotas Públicas vs Protegidas
+- **Públicas (sem token):** `GET /`, `GET /health`, `POST /auth/login`, `/docs`, `/openapi.json`.
+- **Protegidas:** Todas as demais rotas de negócio exigem envio de um Bearer JWT no header `Authorization`.
 
-```bash
-alembic upgrade head
+### Login e Swagger UI
+Para obter acesso, chame a rota de login:
+**POST /auth/login**
+```json
+{
+  "username": "admin",
+  "password": "..."
+}
 ```
-
-Para verificar se a base está atualizada:
-```bash
-alembic current
+Resposta conceitual:
+```json
+{
+  "access_token": "<jwt>",
+  "token_type": "bearer"
+}
 ```
+No **Swagger UI** (`/docs`), após gerar o token de acesso via `/auth/login`, copie o `access_token`, clique no botão **Authorize** no topo da tela e cole-o (o prefixo Bearer é embutido automaticamente pelo OpenAPI/FastAPI, forneça apenas o token).
 
----
+### Arquitetura JWT e Revogação
+- O JWT é **assinado**, não criptografado, e o header/payload usam representação Base64URL.
+- HS256 usa HMAC-SHA256.
+- O payload contém somente: `sub` (identificador do usuário) e `exp`. A senha, o password_hash e a sua _role_ atual NÃO entram no JWT.
+- A _role_ é consultada **em tempo real** no banco. Se um ADMIN for alterado para FUNCIONARIO, o mesmo token já emitido obedece instantaneamente ao novo nível de acesso. Se um usuário for removido, o token devolve imediatamente `401`.
 
-## Execução
+### Matriz de Autorização por Perfis (RBAC)
+Existem dois perfis principais no estoque corporativo:
 
-Inicie o servidor de desenvolvimento com reload ativado (recarrega as mudanças no código automaticamente):
-
-```bash
-python -m uvicorn app.main:app --reload
-```
-
-Os endpoints básicos ficarão disponíveis nestas URLs:
-
-- **API:** http://127.0.0.1:8000
-- **Swagger UI (Testes Interativos):** http://127.0.0.1:8000/docs
-- **OpenAPI JSON (Contrato Automático):** http://127.0.0.1:8000/openapi.json
+| Permissão | ADMIN | FUNCIONARIO |
+| :--- | :--- | :--- |
+| Criar/Editar/Excluir Categorias, Fornecedores e Produtos | ✅ Permitido | ❌ Proibido |
+| Consultar Categorias, Fornecedores e Produtos | ✅ Permitido | ✅ Permitido |
+| Listar Produtos com Estoque Mínimo | ✅ Permitido | ✅ Permitido |
+| Consultar Movimentações | ✅ Permitido | ✅ Permitido |
+| Criar Movimentações (Entrada/Saída) | ✅ Permitido | ✅ Permitido |
 
 ---
 
@@ -130,6 +167,8 @@ A arquitetura atual consolida um modelo claro e pragmático (sem padrões como R
   - `models/` - Declaração puramente persistente (SQLAlchemy).
   - `schemas/` - Validação rígida e modelos de entrada/saída HTTP (Pydantic).
   - `routers/` - Endpoints, dependências e processamento de regras de negócios controladas.
+  - `security/` - Configuração e regras unificadas de senhas, JWT e auth.
+  - `cli/` - Comandos e scripts administrativos.
 
 ---
 
@@ -139,23 +178,24 @@ A arquitetura atual consolida um modelo claro e pragmático (sem padrões como R
 | :------- | :---------------------------------------- | :----- |
 | **GET**  | `/`                                       | Retorna status básico. |
 | **GET**  | `/health`                                 | Confirma integridade operacional do servidor. |
+| **POST** | `/auth/login`                             | Efetua autenticação e devolve JWT. |
 | **GET**  | `/categorias`                             | Lista categorias. |
-| **POST** | `/categorias`                             | Cria uma categoria. |
+| **POST** | `/categorias`                             | Cria uma categoria (ADMIN). |
 | **GET**  | `/categorias/{categoria_id}`              | Busca categoria específica. |
-| **PUT**  | `/categorias/{categoria_id}`              | Edita categoria. |
-| **DELETE**| `/categorias/{categoria_id}`             | Exclui categoria (Restrito). |
+| **PUT**  | `/categorias/{categoria_id}`              | Edita categoria (ADMIN). |
+| **DELETE**| `/categorias/{categoria_id}`             | Exclui categoria (ADMIN). |
 | **GET**  | `/fornecedores`                           | Lista fornecedores. |
-| **POST** | `/fornecedores`                           | Cria um fornecedor. |
+| **POST** | `/fornecedores`                           | Cria um fornecedor (ADMIN). |
 | **GET**  | `/fornecedores/{fornecedor_id}`           | Busca fornecedor específico. |
-| **PUT**  | `/fornecedores/{fornecedor_id}`           | Edita fornecedor. |
-| **DELETE**| `/fornecedores/{fornecedor_id}`          | Exclui fornecedor (Restrito). |
+| **PUT**  | `/fornecedores/{fornecedor_id}`           | Edita fornecedor (ADMIN). |
+| **DELETE**| `/fornecedores/{fornecedor_id}`          | Exclui fornecedor (ADMIN). |
 | **GET**  | `/produtos`                               | Lista produtos. |
-| **POST** | `/produtos`                               | Cria um produto. |
+| **POST** | `/produtos`                               | Cria um produto (ADMIN). |
 | **GET**  | `/produtos/{produto_id}`                  | Busca produto específico. |
-| **PUT**  | `/produtos/{produto_id}`                  | Edita produto. |
-| **DELETE**| `/produtos/{produto_id}`                 | Exclui produto (Restrito). |
-| **GET**  | `/produtos/consultas/estoque-minimo`      | Lista todos os produtos cujo estoque <= estoque mínimo. |
-| **GET**  | `/movimentacoes`                          | Lista movimentações históricas de entrada e saída. |
+| **PUT**  | `/produtos/{produto_id}`                  | Edita produto (ADMIN). |
+| **DELETE**| `/produtos/{produto_id}`                 | Exclui produto (ADMIN). |
+| **GET**  | `/produtos/consultas/estoque-minimo`      | Lista produtos com estoque em limite crítico. |
+| **GET**  | `/movimentacoes`                          | Lista movimentações históricas. |
 | **POST** | `/movimentacoes`                          | Efetua movimentação transacional e atualiza o estoque. |
 | **GET**  | `/movimentacoes/{movimentacao_id}`        | Busca uma movimentação pelo ID. |
 
@@ -181,29 +221,16 @@ O endpoint `GET /movimentacoes` possui três Query Parameters Opcionais cumulati
 
 ## Transação e Concorrência
 
-Para assegurar blindagem contra concorrência e o antipadrão _lost update_, a submissão de movimentações foi desenhada em uma arquitetura transacional rígida:
+Para assegurar blindagem contra concorrência e o antipadrão _lost update_, a submissão de movimentações foi desenhada em uma arquitetura transacional rígida.
+A estrutura invoca explicitamente o bloqueio através de um `SELECT ... FOR UPDATE` na linha do Produto. Requisições concorrentes sobre o mesmo Produto operam de forma isolada: uma requisição obtém o lock e processa; a segunda transação aguarda a liberação do row lock; depois do commit da primeira, ela adquire o lock, lê o saldo atualizado e recebe 409 pela regra de estoque insuficiente.
 
-1. Abertura do bloco contextual (`with db.begin()`).
-2. Disparo de instrução de bloqueio no PostgreSQL (`SELECT Produto FOR UPDATE`).
-3. Validação matemática do Saldo (Caso `SAIDA`).
-4. Atualização lógica do `quantidade_em_estoque` e acoplamento em banco da cópia _histórica_ (`nova_movimentacao`).
-5. Fechamento seguro (`COMMIT` único, ou Rollback caso levante `HTTPException`).
+O processo funciona da seguinte forma:
+1. Disparo de instrução de bloqueio no PostgreSQL (`SELECT Produto FOR UPDATE`).
+2. Validação matemática do Saldo (Caso `SAIDA`).
+3. Atualização lógica do `quantidade_em_estoque` e instanciamento da cópia _histórica_ (`nova_movimentacao`).
+4. Fechamento seguro unificado (`COMMIT` salvando movimentação e saldo na mesma transação, ou `ROLLBACK` blindado nas exceções).
 
-Isso defende inteiramente a base de dados em cenários de requisições simultâneas ou overselling que descolariam o relatório da realidade factual do estoque.
-
----
-
-## Fluxo de Uso Recomendado
-
-O ecossistema demanda uma hierarquia forte na inserção. Para um teste linear, siga:
-
-1. `POST /categorias` (ex. "Eletrônicos")
-2. `POST /fornecedores` (ex. CNPJ Válido)
-3. `POST /produtos` (ex. Mouse - vinculado às chaves de Categoria e Fornecedor. Nasce com saldo `0`).
-4. `POST /movimentacoes` (ENTRADA de 50 mouses).
-5. `GET /produtos` (Atestar saldo atualizado para 50).
-6. `POST /movimentacoes` (SAIDA de 10 mouses).
-7. Repita requisições excedentes na saída e observe as rejeições de Conflito. Nunca force update no saldo via PUT Produto.
+Isso garante que o saldo nunca se descole do histórico.
 
 ---
 
@@ -220,18 +247,25 @@ A API possui um empacotamento restritivo de exceções e bloqueia vazamento de S
 }
 ```
 
-- **400 Bad Request:** Requisições lógicas incompatíveis, sem tocar o banco (ex: Data Início no futuro com relação a Data Fim).
-- **404 Not Found:** Falta de entidade. No endpoint de buscas, uma busca _perfeitamente bem formulada_, cujo fornecedor não possua movimentações, retornará `200` acompanhado de array vazio `[]` e não um `404`. Um filtro com `fornecedor_id` não correspondente a nada vivo devolverá _404 explícito_.
-- **409 Conflict:** Violação de estados imutáveis, Unique Violation do DB, Falta de Saldo ou Deletes Protegidos por referências vitais.
-- **422 Validation Error:** Falha de validação do contrato de entrada, como tipo, formato, limites ou campos extras não permitidos. Não vaza input malicioso injetado nos "details".
-- **500 Internal Server Error:** O contrato é estruturado contendo `{"status": 500, "error": "internal_error", "message": "Erro interno do servidor.", "details": null}`. Os detalhes técnicos ficam apenas no log do servidor.
+- **400 Bad Request:** Requisições lógicas incompatíveis, sem tocar o banco.
+- **401 Unauthorized:** Token ausente, inválido, expirado ou usuário-alvo removido. Acompanha o header `WWW-Authenticate: Bearer`.
+- **403 Forbidden:** O cliente é plenamente autenticado, mas a restrição de _role_ impede o acesso. Não emite header `WWW-Authenticate`.
+- **404 Not Found:** Falta de entidade (em buscas singulares ou via relacionamentos explícitos). Listagens que resultam vazias respondem `200 []`.
+- **409 Conflict:** Violação de estados imutáveis, restrições de unicidade, falta de saldo ou exclusões atreladas a FK.
+- **422 Validation Error:** Falha de validação do contrato de entrada. Não vaza input malicioso nos details.
+- **500 Internal Server Error:** Oculta falhas técnicas para quem consome a API. Os logs técnicos permanecem seguros no console do uvicorn.
 
 ---
 
 ## Estado dos testes
 
-A aplicação possui uma suíte automatizada permanente baseada no `pytest`, atestando as lógicas de domínio, unicidade, movimentações transacionais, regras restritas (extra="forbid") e erros estruturados. A suíte atua obrigatoriamente sobre um banco de dados real PostgreSQL exclusivo (`stockflow_test`) e se protege contra mutações externas.
-Os testes automatizados são executados também via GitHub Actions.
+A aplicação possui uma suíte automatizada permanente com **94 testes** cobrindo inteiramente: CRUD, unicidade, movimentações estritas, consultas, limites e concorrência local, além de validações estendidas sobre a mecânica de JWT e RBAC. A suíte atua obrigatoriamente sobre um banco de dados real PostgreSQL exclusivo (`stockflow_test`) e se protege contra mutações externas.
+
+---
+
+## Integração Contínua (CI) com GitHub Actions
+
+Configuramos via `.github/workflows/tests.yml` um pipeline robusto ativado em `push` e `pull_request` direcionados à _main_. O Workflow automatiza: PostgreSQL 16 descartável de fundo, aplicação de Migrations Alembic do zero e o disparo de toda a suíte `pytest`. Um fluxo falho gera workflow vermelho na aba _Actions_ do repositório (O bloqueio nativo de merges em vermelho depende apenas de configurações restritas de _Branch Protection_ aplicadas individualmente pelos administradores no repositório remoto).
 
 ---
 
