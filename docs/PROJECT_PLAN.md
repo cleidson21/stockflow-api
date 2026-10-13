@@ -487,9 +487,9 @@ Período planejado: 14/10 a 15/10.
 
 ### TSK-8.3 — Auditoria de banco
 
-- [ ] Criar banco do zero.
-- [ ] Aplicar migrations do zero.
-- [ ] Confirmar funcionamento sem estado local prévio.
+- [x] Criar banco do zero.
+- [x] Aplicar migrations do zero.
+- [x] Confirmar funcionamento sem estado local prévio.
 
 ### TSK-8.4 — Simulação de instalação
 
