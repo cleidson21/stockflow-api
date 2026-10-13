@@ -480,10 +480,10 @@ Período planejado: 14/10 a 15/10.
 
 ### TSK-8.2 — Auditoria Git
 
-- [ ] Revisar Conventional Commits.
-- [ ] Confirmar progresso incremental real.
-- [ ] Confirmar ausência de segredos no histórico.
-- [ ] Confirmar working tree limpa.
+- [x] Revisar Conventional Commits.
+- [x] Confirmar progresso incremental real.
+- [x] Confirmar ausência de segredos no histórico.
+- [x] Confirmar working tree limpa.
 
 ### TSK-8.3 — Auditoria de banco
 
