@@ -23,6 +23,8 @@ router = APIRouter(
     response_model=CategoriaResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
+        403: {"model": ErrorResponse, "description": "Você não possui permissão para executar esta operação."},
         409: {"model": ErrorResponse, "description": "Categoria já existe com este nome."},
         422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
@@ -51,6 +53,7 @@ def criar_categoria(categoria_in: CategoriaCreate, db: Session = Depends(get_db)
     dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=List[CategoriaResponse],
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
     }
 )
@@ -64,6 +67,7 @@ def listar_categorias(db: Session = Depends(get_db)):
     dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=CategoriaResponse,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
         404: {"model": ErrorResponse, "description": "Categoria não encontrada."},
         422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
@@ -83,6 +87,8 @@ def buscar_categoria(categoria_id: int, db: Session = Depends(get_db)):
     dependencies=[Depends(require_roles(Role.ADMIN))],
     response_model=CategoriaResponse,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
+        403: {"model": ErrorResponse, "description": "Você não possui permissão para executar esta operação."},
         404: {"model": ErrorResponse, "description": "Categoria não encontrada."},
         409: {"model": ErrorResponse, "description": "Conflito de nome duplicado."},
         422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
@@ -116,6 +122,8 @@ def atualizar_categoria(categoria_id: int, categoria_in: CategoriaUpdate, db: Se
     dependencies=[Depends(require_roles(Role.ADMIN))],
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
+        403: {"model": ErrorResponse, "description": "Você não possui permissão para executar esta operação."},
         404: {"model": ErrorResponse, "description": "Categoria não encontrada."},
         409: {"model": ErrorResponse, "description": "A categoria não pode ser removida pois possui produtos relacionados."},
         422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},

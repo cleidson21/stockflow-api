@@ -37,6 +37,8 @@ def validar_relacionamentos(db: Session, categoria_id: int, fornecedor_id: int):
     response_model=ProdutoResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
+        403: {"model": ErrorResponse, "description": "Você não possui permissão para executar esta operação."},
         404: {"model": ErrorResponse, "description": "Categoria ou Fornecedor não encontrado."},
         409: {"model": ErrorResponse, "description": "Já existe um produto com este SKU ou falha de concorrência com FK."},
         422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
@@ -82,6 +84,7 @@ def criar_produto(produto_in: ProdutoCreate, db: Session = Depends(get_db)):
     dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=List[ProdutoResponse],
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
     }
 )
@@ -94,6 +97,7 @@ def listar_produtos_estoque_minimo(db: Session = Depends(get_db)):
     dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=List[ProdutoResponse],
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
     }
 )
@@ -106,6 +110,7 @@ def listar_produtos(db: Session = Depends(get_db)):
     dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=ProdutoResponse,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
         404: {"model": ErrorResponse, "description": "Produto não encontrado."},
         422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
@@ -125,6 +130,8 @@ def buscar_produto(produto_id: int, db: Session = Depends(get_db)):
     dependencies=[Depends(require_roles(Role.ADMIN))],
     response_model=ProdutoResponse,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
+        403: {"model": ErrorResponse, "description": "Você não possui permissão para executar esta operação."},
         404: {"model": ErrorResponse, "description": "Produto, Categoria ou Fornecedor não encontrado."},
         409: {"model": ErrorResponse, "description": "Conflito de SKU duplicado ou falha de concorrência."},
         422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
@@ -173,6 +180,8 @@ def atualizar_produto(produto_id: int, produto_in: ProdutoUpdate, db: Session = 
     dependencies=[Depends(require_roles(Role.ADMIN))],
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
+        403: {"model": ErrorResponse, "description": "Você não possui permissão para executar esta operação."},
         404: {"model": ErrorResponse, "description": "Produto não encontrado."},
         409: {"model": ErrorResponse, "description": "O produto não pode ser removido pois possui movimentações relacionadas."},
         422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},

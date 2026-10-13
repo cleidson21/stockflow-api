@@ -25,6 +25,7 @@ router = APIRouter(
     response_model=MovimentacaoResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
         404: {"model": ErrorResponse, "description": "Produto não encontrado."},
         409: {"model": ErrorResponse, "description": "Estoque insuficiente para a saída solicitada."},
         422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
@@ -79,6 +80,7 @@ def criar_movimentacao(mov_in: MovimentacaoCreate, db: Session = Depends(get_db)
     response_model=List[MovimentacaoResponse],
     responses={
         400: {"model": ErrorResponse, "description": "data_inicio não pode ser posterior a data_fim."},
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
         404: {"model": ErrorResponse, "description": "Fornecedor explicitamente não encontrado."},
         422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
@@ -119,6 +121,7 @@ def listar_movimentacoes(
     dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=MovimentacaoResponse,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
         404: {"model": ErrorResponse, "description": "Movimentação não encontrada."},
         422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}

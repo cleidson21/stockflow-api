@@ -1160,7 +1160,7 @@ O lock pessimista (`FOR UPDATE`) torna o fluxo explícito, unitário e fácil de
 
 ### Consequências
 - A aplicação serializará requisições simultâneas para o **mesmo Produto** no nível do banco (uma aguarda a liberação da linha enquanto a outra processa).
-- Transações de **Produtos diferentes** prosseguirão em paralelo normalmente (escopo do lock reduzido à linha).
+- Operações em Produtos diferentes não disputam o mesmo row lock de Produto, embora outros recursos do banco ainda possam gerar contenção.
 - A imutabilidade é garantida.
 - Fornecedor histórico inserido na Movimentação estará perfeitamente sincronizado com o Produto atual.
 - O risco de *deadlock* é baixo pois as movimentações travam apenas uma única linha de Produto por vez.

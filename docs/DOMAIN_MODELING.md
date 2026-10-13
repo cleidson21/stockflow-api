@@ -690,7 +690,7 @@ Para evitar problemas de *race condition* na atualização de estoques, o sistem
 7. Criar a `MOVIMENTACAO_ESTOQUE` contendo os dados, incluindo o fornecedor histórico recém capturado da linha bloqueada.
 `COMMIT` (Qualquer falha após o BEGIN resulta em `ROLLBACK`).
 
-A atomicidade deste bloco transacional é essencial, garantindo que o saldo e o histórico não divirjam (tudo ou nada). O isolamento (`READ COMMITTED` em conjunto com `FOR UPDATE`) serializa operações concorrentes sobre a mesma linha de Produto, forçando a segunda requisição a aguardar a liberação do lock antes de prosseguir. Operações em Produtos diferentes não disputam o mesmo row-level lock de Produto. A consistência deverá ser confirmada por testes.
+A atomicidade deste bloco transacional é essencial, garantindo que o saldo e o histórico não divirjam (tudo ou nada). O isolamento (`READ COMMITTED` em conjunto com `FOR UPDATE`) serializa operações concorrentes sobre a mesma linha de Produto, forçando a segunda requisição a aguardar a liberação do lock antes de prosseguir. Operações em Produtos diferentes não disputam o mesmo row lock de Produto, embora outros recursos do banco ainda possam gerar contenção. A consistência deverá ser confirmada por testes.
 
 > **Estado:** Estrategia DEFINIDA ARQUITETURALMENTE (DEC-031). Não implementada nem testada.
 

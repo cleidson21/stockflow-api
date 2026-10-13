@@ -471,12 +471,12 @@ Período planejado: 14/10 a 15/10.
 
 ### TSK-8.1 — Auditoria funcional
 
-- [ ] Revisar todos os requisitos obrigatórios.
-- [ ] Revisar CRUD.
-- [ ] Revisar movimentações.
-- [ ] Revisar consultas.
-- [ ] Revisar erros.
-- [ ] Revisar documentação.
+- [x] Revisar todos os requisitos obrigatórios.
+- [x] Revisar CRUD.
+- [x] Revisar movimentações.
+- [x] Revisar consultas.
+- [x] Revisar erros.
+- [x] Revisar documentação.
 
 ### TSK-8.2 — Auditoria Git
 

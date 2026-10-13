@@ -23,6 +23,8 @@ router = APIRouter(
     response_model=FornecedorResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
+        403: {"model": ErrorResponse, "description": "Você não possui permissão para executar esta operação."},
         409: {"model": ErrorResponse, "description": "CNPJ ou email já cadastrado."},
         422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
@@ -65,6 +67,7 @@ def criar_fornecedor(fornecedor_in: FornecedorCreate, db: Session = Depends(get_
     dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=List[FornecedorResponse],
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
     }
 )
@@ -77,6 +80,7 @@ def listar_fornecedores(db: Session = Depends(get_db)):
     dependencies=[Depends(require_roles(Role.ADMIN, Role.FUNCIONARIO))],
     response_model=FornecedorResponse,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
         404: {"model": ErrorResponse, "description": "Fornecedor não encontrado."},
         422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
         500: {"model": ErrorResponse, "description": "Erro interno do servidor."}
@@ -96,6 +100,8 @@ def buscar_fornecedor(fornecedor_id: int, db: Session = Depends(get_db)):
     dependencies=[Depends(require_roles(Role.ADMIN))],
     response_model=FornecedorResponse,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
+        403: {"model": ErrorResponse, "description": "Você não possui permissão para executar esta operação."},
         404: {"model": ErrorResponse, "description": "Fornecedor não encontrado."},
         409: {"model": ErrorResponse, "description": "CNPJ ou email já cadastrado."},
         422: {"model": ValidationErrorResponse, "description": "Erro de validação."},
@@ -143,6 +149,8 @@ def atualizar_fornecedor(fornecedor_id: int, fornecedor_in: FornecedorUpdate, db
     dependencies=[Depends(require_roles(Role.ADMIN))],
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
+        401: {"model": ErrorResponse, "description": "Credenciais inválidas."},
+        403: {"model": ErrorResponse, "description": "Você não possui permissão para executar esta operação."},
         404: {"model": ErrorResponse, "description": "Fornecedor não encontrado."},
         409: {"model": ErrorResponse, "description": "O fornecedor não pode ser removido pois possui registros relacionados."},
         422: {"model": ValidationErrorResponse, "description": "Parâmetro inválido."},
