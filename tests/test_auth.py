@@ -178,6 +178,7 @@ def test_settings_fails_without_jwt_secret(monkeypatch):
     
     with pytest.raises(ValidationError) as excinfo:
         Settings(
+            _env_file=None,
             db_host="localhost",
             db_port=5432,
             db_name="test",
