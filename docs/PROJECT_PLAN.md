@@ -23,7 +23,7 @@ Prazo final de entrega: 16/10/2026.
 
 ## 3. Fase 0 — Fundação e Governança
 
-Meta: preparar um repositório limpo, rastreável e adequado ao desenvolvimento assistido por IA.
+Meta: preparar um repositório limpo, rastreável e estruturado para o desenvolvimento assistido por ferramentas de IA.
 
 ### TSK-0.1 — Definição do projeto
 
@@ -463,11 +463,13 @@ Período planejado: 11/10 a 13/10.
 
 ---
 
-## 11. Fase 8 — Auditoria Final e Defesa Técnica
+## 11. Fase 8 — Auditoria Final e Revisão de Qualidade
 
-Meta: entregar um projeto que funcione e que possa ser explicado integralmente pelo desenvolvedor.
+Meta: assegurar a estabilidade operacional da aplicação, a rastreabilidade do repositório e a conformidade técnica e documental com os critérios de avaliação do processo seletivo.
 
 Período planejado: 14/10 a 15/10.
+
+> **Nota histórica de escopo:** Esta fase foi originalmente planejada contemplando a preparação para defesa oral técnica. Com a dispensa da apresentação oral comunicada posteriormente pelos diretores responsáveis pelo processo seletivo, o escopo da etapa foi redirecionado para a auditoria de instalação limpa e a revisão minuciosa de qualidade técnica, integridade documental e conformidade com o barema de avaliação.
 
 ### TSK-8.1 — Auditoria funcional
 
@@ -485,34 +487,51 @@ Período planejado: 14/10 a 15/10.
 - [x] Confirmar ausência de segredos no histórico.
 - [x] Confirmar working tree limpa.
 
-### TSK-8.3 — Auditoria de banco
+### TSK-8.3 — Auditoria e reconstrução de banco
 
 - [x] Criar banco do zero.
 - [x] Aplicar migrations do zero.
 - [x] Confirmar funcionamento sem estado local prévio.
 
-### TSK-8.4 — Simulação de instalação
+### TSK-8.4 — Simulação de instalação limpa
 
-- [ ] Clonar o repositório em ambiente limpo.
-- [ ] Seguir somente o README.
-- [ ] Configurar aplicação.
-- [ ] Executar migrations.
-- [ ] Iniciar servidor.
-- [ ] Executar testes.
+- [x] Clonar o repositório em ambiente limpo.
+- [x] Seguir somente o README.
+- [x] Configurar aplicação.
+- [x] Executar migrations.
+- [x] Iniciar servidor.
+- [x] Executar testes.
 
-### TSK-8.5 — Preparação da defesa
+### TSK-8.5 — Revisão Final de Qualidade e Conformidade com o Barema
 
-- [ ] Explicar arquitetura sem consultar código.
-- [ ] Explicar modelos e relacionamentos.
-- [ ] Explicar schemas.
-- [ ] Explicar SQLAlchemy.
-- [ ] Explicar Alembic.
-- [ ] Explicar transações.
-- [ ] Explicar imutabilidade das movimentações.
-- [ ] Explicar tratamento de erros.
-- [ ] Explicar concorrência, se implementada.
-- [ ] Explicar cada dependência externa utilizada.
-- [ ] Revisar principais commits e decisões.
+Substitui a preparação para apresentação oral, concentrando o esforço na auditoria técnica e editorial minuciosa de cada arquivo entregue, executada sob o método rigoroso de **um arquivo por vez** (diagnóstico, proposta de alteração, correção, verificação, relatório individual e aprovação do desenvolvedor).
+
+- [ ] Revisão integral da documentação do projeto.
+- [ ] Revisão minuciosa dos comentários de código.
+- [ ] Alinhamento das informações documentadas com a implementação real.
+- [ ] Consistência dos schemas Pydantic e endpoints FastAPI.
+- [ ] Revisão do tratamento de erros e respostas HTTP.
+- [ ] Verificação específica do mecanismo de logging nos arquivos de produção.
+- [ ] Verificação de boas práticas e qualidade de código.
+- [ ] Preservação das regras transacionais e isolamento de concorrência.
+- [ ] Auditoria das referências à autoria técnica e ao apoio de ferramentas de IA.
+- [ ] Verificação de conformidade com os critérios do barema do processo seletivo.
+- [ ] Relatório consolidado da revisão de qualidade.
+- [ ] Validação final da suíte de testes e integridade do Git.
+
+#### Critérios de Avaliação do Barema (Referência para Verificação):
+
+Os critérios obrigatórios totalizam 10 pontos. Os diferenciais avaliados (até 2 pontos adicionais) podem compensar eventuais deduções pontuais nos itens obrigatórios, respeitado o teto máximo de 10 pontos da avaliação geral.
+
+- **Documentação e comentários (1 ponto):** Clareza técnica, README completo, registro explícito de decisões e comentários de código fundamentados.
+- **CRUD de entidades (2 pontos):** Integridade e regras de negócio de Categorias, Fornecedores e Produtos, incluindo unicidade e integridade referencial.
+- **Consultas avançadas (2 pontos):** Filtro de estoque mínimo e histórico de movimentações por período e fornecedor.
+- **Tratamento de erros e logging (2 pontos):** Respostas semânticas padronizadas, blindagem de detalhes internos sensíveis e registro adequado de logs no servidor (requer avaliação específica nos módulos de produção).
+- **Commits padronizados (1 ponto):** Rastreabilidade e evolução incremental através de Conventional Commits.
+- **Qualidade de código (2 pontos):** Estrutura limpa, tipagem consistente, ausência de abstrações prematuras e separação clara de responsabilidades.
+- **Diferenciais avaliados (até 2 pontos):**
+  - Autenticação e autorização RBAC via JWT (até 1 ponto).
+  - Testes automatizados abrangentes com pytest (até 1 ponto).
 
 ---
 
@@ -532,13 +551,13 @@ Data limite: 16/10/2026.
 
 ## 13. Princípio de execução
 
-Nenhuma caixa deve ser marcada como concluída apenas porque um agente de IA gerou o código.
+O desenvolvedor conduziu a implementação do StockFlow API, atuando como o principal responsável pelas decisões técnicas, pela arquitetura e pela validação das alterações. Ferramentas de IA foram utilizadas como apoio ao desenvolvimento, à revisão técnica e à organização da documentação.
 
-Uma tarefa somente é considerada concluída quando:
+Nenhuma tarefa deve ser marcada como concluída sem validação efetiva. Uma tarefa somente é considerada concluída quando:
 
-1. a implementação foi revisada;
-2. o comportamento foi validado;
-3. o desenvolvedor compreende o código;
-4. as decisões relevantes podem ser justificadas;
-5. o estado do Git foi revisado;
-6. a alteração está pronta para um commit semanticamente coerente.
+1. a implementação ou alteração foi inspecionada e revisada pelo desenvolvedor;
+2. a conformidade foi validada de acordo com o escopo da tarefa (execução de testes automatizados para alterações de código; verificação de integridade, formatação e rastreabilidade para alterações exclusivamente documentais);
+3. as decisões técnicas, regras de negócio e estrutura adotadas foram compreendidas e podem ser fundamentadas tecnicamente;
+4. as modificações atendem aos critérios de qualidade e não introduzem inconsistências com os demais documentos e componentes do projeto;
+5. o estado do Git foi auditado (verificação de status e diff, sem arquivos temporários ou alterações não intencionais);
+6. a alteração está pronta para um commit semântico independente.
