@@ -1,13 +1,26 @@
+import logging
+
 from fastapi import FastAPI
+
+from app.exceptions import add_exception_handlers
+from app.routers import auth, categorias, fornecedores, movimentacoes, produtos
+
+app_logger = logging.getLogger("app")
+if not app_logger.hasHandlers():
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+    )
+    app_logger.addHandler(handler)
+    # Sem handlers, WARNING no root é tratado como o padrão do logging.
+    if app_logger.level == logging.NOTSET and logging.getLogger().level == logging.WARNING:
+        app_logger.setLevel(logging.INFO)
 
 app = FastAPI(
     title="StockFlow API",
     description="REST API para gerenciamento de estoque.",
     version="0.1.0",
 )
-
-from app.routers import categorias, fornecedores, produtos, movimentacoes, auth
-from app.exceptions import add_exception_handlers
 
 app.include_router(auth.router)
 app.include_router(categorias.router)
