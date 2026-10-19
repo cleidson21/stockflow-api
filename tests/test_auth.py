@@ -5,6 +5,7 @@ import jwt
 import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
+from pwdlib.exceptions import UnknownHashError
 
 from app.models.usuario import Usuario, Role
 from app.security.passwords import hash_password
@@ -53,15 +54,70 @@ def test_login_funcionario_valido(client, create_test_users):
     response = client.post("/auth/login", json={"username": "func", "password": "senha-func"})
     assert response.status_code == 200
 
-def test_login_username_inexistente(client):
-    response = client.post("/auth/login", json={"username": "fantasma", "password": "123"})
+def test_login_username_inexistente(unauthenticated_client):
+    response = unauthenticated_client.post("/auth/login", json={"username": "fantasma", "password": "123"})
     assert response.status_code == 401
-    assert response.json()["message"] == "Credenciais inválidas."
+    assert response.headers.get("WWW-Authenticate") == "Bearer"
+    assert response.json() == {
+        "status": 401,
+        "error": "unauthorized",
+        "message": "Credenciais inválidas.",
+        "details": None,
+    }
+    assert "access_token" not in response.json()
 
-def test_login_senha_incorreta(client, create_test_users):
-    response = client.post("/auth/login", json={"username": "admin", "password": "wrong"})
+
+def test_login_senha_incorreta(unauthenticated_client, create_test_users):
+    response = unauthenticated_client.post("/auth/login", json={"username": "admin", "password": "wrong"})
     assert response.status_code == 401
-    assert response.json()["message"] == "Credenciais inválidas."
+    assert response.headers.get("WWW-Authenticate") == "Bearer"
+    assert response.json() == {
+        "status": 401,
+        "error": "unauthorized",
+        "message": "Credenciais inválidas.",
+        "details": None,
+    }
+    assert "access_token" not in response.json()
+
+
+def test_login_hash_nao_reconhecido_retorna_500_generico(verify_test_database, caplog):
+    from app.database import SessionLocal
+    from app.main import app
+
+    hash_invalido = "hash-ficticio-nao-reconhecido-pelo-pwdlib"
+    with SessionLocal() as db:
+        db.add(Usuario(
+            username="hash_incompativel",
+            password_hash=hash_invalido,
+            role=Role.FUNCIONARIO,
+        ))
+        db.commit()
+
+    # Permite inspecionar a resposta do handler global sem relançar a exceção.
+    with TestClient(app, raise_server_exceptions=False) as client_local:
+        response = client_local.post(
+            "/auth/login",
+            json={"username": "hash_incompativel", "password": "senha-ficticia"},
+        )
+
+    assert any(
+        record.name == "app.exceptions"
+        and record.exc_info
+        and isinstance(record.exc_info[1], UnknownHashError)
+        for record in caplog.records
+    )
+    assert response.status_code == 500
+    assert response.json() == {
+        "status": 500,
+        "error": "internal_error",
+        "message": "Erro interno do servidor.",
+        "details": None,
+    }
+    assert "access_token" not in response.json()
+    assert hash_invalido not in response.text
+    assert "Traceback" not in response.text
+    assert "UnknownHashError" not in response.text
+
 
 def test_login_campo_extra(client):
     response = client.post("/auth/login", json={"username": "a", "password": "b", "extra": "1"})
