@@ -195,7 +195,9 @@ Produto é a entidade central do sistema. Representa um item físico gerenciado 
 ### 4.2 Fornecedor
 
 **Responsabilidade no domínio:**
-Fornecedor representa a entidade externa que provê produtos para a loja. Deve ser identificável de forma única por CNPJ e email. Está relacionado a produtos e, indiretamente, ao histórico de movimentações.
+Fornecedor representa a entidade externa que provê produtos para a loja. Deve ser identificável de forma única por CNPJ e email.
+
+Relaciona-se diretamente com produtos e movimentações. `Produto.fornecedor_id` representa o fornecedor cadastral atual do produto. `MovimentacaoEstoque.fornecedor_id` preserva a referência ao fornecedor associado ao produto no momento da criação da movimentação (DEC-010). A alteração do fornecedor cadastral pela API não modifica essa referência nas movimentações anteriores.
 
 **Atributos explicitamente exigidos:**
 
