@@ -1199,13 +1199,27 @@ Resolução: A política conceitual escolhida é RESTRICT para todas as entidade
 
 ## PEND-007 — Formato padronizado de erros
 
-Status: PROPOSED
+Status: ACCEPTED
 
-Questão:
+### Questão original (registro histórico)
 
 Qual será o envelope padrão das respostas de erro?
 
 A decisão deve ser tomada antes da consolidação dos exception handlers.
+
+### Resolução e implementação posterior
+
+A entrada permaneceu como `PROPOSED` após a implementação iniciada em `1b9aa82`. Esta atualização registra a resolução da pendência, preservando seu identificador e a questão original, que não especificava campos nem um padrão de envelope.
+
+Foi adotado um envelope JSON próprio com `status` (código HTTP), `error` (categoria), `message` (mensagem) e `details` (detalhes de validação ou `null`). Os handlers estão em [app/exceptions.py](../app/exceptions.py), registrados por `add_exception_handlers(app)` em `app/main.py`. Os schemas `ErrorResponse` e `ValidationErrorResponse` estão em [app/schemas/erro.py](../app/schemas/erro.py).
+
+- **Exceções HTTP:** o handler de `StarletteHTTPException` mantém o status, usa `exc.detail` como mensagem e retorna `details=null`. Categoriza 400, 401, 403, 404, 405 e 409; os demais códigos recebem `error="http_error"`. Preserva os headers fornecidos pela exceção, incluindo `WWW-Authenticate: Bearer` nos casos de autenticação que o definem.
+- **Validação de entrada:** `RequestValidationError` retorna 422, `error="validation_error"` e mensagem `Dados de entrada inválidos.`. Cada item de `details` contém somente `loc`, `msg` e `type`, omitindo `input` e `ctx`.
+- **Exceções inesperadas:** o handler global retorna 500, `error="internal_error"`, mensagem `Erro interno do servidor.` e `details=null`, sem incluir o texto da exceção ou traceback no corpo. Registra a falha no servidor com `logger.exception`; o contexto de requisição foi acrescentado em `d2f643c`. Esse tratamento não implica sanitização universal dos logs.
+
+### Evidências de validação
+
+`tests/test_erros.py` contém casos para 400, 404, 409, 422 e 500, incluindo verificação da mensagem genérica de falha interna e do registro em log. `tests/test_auth.py` verifica o envelope completo de 401 em falhas de login, a preservação de `WWW-Authenticate` e o retorno 500 genérico para hash não reconhecido. Os testes foram inspecionados nesta correção documental, sem nova execução da suíte.
 
 ---
 
@@ -1324,7 +1338,11 @@ Implementaremos o diferencial opcional de autenticação e autorização RBAC (R
    Validará a assinatura e expiração do JWT. Lerá o `sub` e, com isso, consultará o usuário em banco para obter o *role* persistido de forma segura e atualizada, centralizando a autorização no estado atual do banco, e não no JWT.
 
 6. **Bootstrap:**
-   NÃO será criado usuário de forma automática no startup. NÃO será usado `ADMIN_PASSWORD` permanente no startup. NÃO será criado registro público. Um script ou comando CLI administrativo será concebido futuramente para criar usuários interagindo pelo terminal, com senha solicitada e hash persistido.
+   NÃO será criado usuário de forma automática no startup. NÃO será usado `ADMIN_PASSWORD` permanente no startup. NÃO será criado registro público. Na decisão original, a criação administrativa por script ou CLI ficou prevista para implementação posterior, com senha solicitada no terminal e hash persistido.
+
+   **Implementação posterior:** a CLI [app/cli/create_user.py](../app/cli/create_user.py) foi incluída em `92ddb88`. O comando `python -m app.cli.create_user --username admin --role ADMIN`, documentado no [README](../README.md), exige `--username` e `--role`, com papéis `ADMIN` ou `FUNCIONARIO`.
+
+   **Estado atual:** a CLI verifica previamente se o username existe, solicita senha e confirmação com `getpass`, rejeita divergência ou senha vazia e persiste `Usuario` com o hash gerado por `hash_password` (pwdlib/Argon2). Na gravação, trata `IntegrityError` com rollback e identifica duplicidade pelo SQLSTATE `23505`. A criação ocorre administrativamente pelo terminal; não há endpoint de cadastro público nem criação automática de usuários no startup.
 
 7. **Matriz de Permissões (RBAC):**
    - **ADMIN**: Permissão plena em todas as rotas de negócio.
