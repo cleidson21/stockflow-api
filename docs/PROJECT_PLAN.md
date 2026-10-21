@@ -8,7 +8,9 @@ Cada tarefa deve ser concluída, compreendida, testada e revisada antes do avan�
 
 O projeto deve priorizar primeiro todos os requisitos obrigatórios do desafio técnico. Os diferenciais devem ser implementados somente quando a base obrigatória estiver estável.
 
-Prazo final de entrega: 16/10/2026.
+Prazo vigente de entrega: **24/10/2026**, conforme prorrogação posteriormente comunicada ao desenvolvedor pela organização. O prazo original de **16/10/2026** permanece registrado como referência histórica.
+
+O [enunciado de referência](referencias/prosel-2026.2/desafio-tecnico-backend-prosel-2026.2.md) do Prosel 2026.2 foi obtido de um colega, tem versão não confirmada e pode corresponder a uma versão anterior. A prorrogação e o cancelamento da defesa oral são comunicações posteriores recebidas pelo desenvolvedor; não há evidência, nesta revisão, de sua publicação formal no enunciado anexado.
 
 ---
 
@@ -18,6 +20,8 @@ Prazo final de entrega: 16/10/2026.
 - [~] Em andamento
 - [x] Concluída
 - [!] Bloqueada ou aguardando decisão
+
+Os períodos indicados nas fases pertencem ao planejamento original; não representam datas comprovadas de execução. Os itens concluídos preservam os marcos já registrados. A validação final após as revisões permanece separada desses resultados históricos, conforme TSK-8.5.
 
 ---
 
@@ -393,6 +397,8 @@ Período planejado: 09/10 a 10/10.
 
 ### TSK-6.4 — OpenAPI/Swagger
 
+Os itens abaixo registram a documentação implementada e a auditoria anterior (`1b9aa82` e `c686612`). A conferência integral do OpenAPI atual, incluindo exemplos e correspondência entre respostas documentadas e reais, permanece pendente em TSK-8.5.
+
 - [x] Documentar cada endpoint.
 - [x] Documentar parâmetros.
 - [x] Documentar request bodies.
@@ -423,6 +429,8 @@ Período planejado: 11/10 a 13/10.
 
 ### TSK-7.1 — Testes automatizados
 
+A suíte atual possui **101 testes automatizados**, aprovados na última execução completa informada pelo desenvolvedor e registrada no README. Nesta atualização, a coleta com `pytest --collect-only` confirmou os 101 casos, sem executar a suíte. Esse total não representa cobertura de 100% do código nem substitui a validação final pendente.
+
 - [x] Definir estratégia de testes.
 - [x] Configurar framework.
 - [x] Criar ambiente de teste isolado.
@@ -439,6 +447,8 @@ Período planejado: 11/10 a 13/10.
 - [x] Avaliar GitHub Actions.
 - [x] Executar testes automaticamente.
 - [x] Garantir falha do workflow quando testes falharem.
+
+O workflow `.github/workflows/tests.yml` configura Python 3.12, PostgreSQL 16, instalação de dependências, `alembic upgrade head`, `alembic current` e `pytest -q` em pushes e pull requests para `main`. Sua presença comprova a configuração; o resultado remoto da execução correspondente à entrega ainda deve ser conferido.
 
 ### TSK-7.3 — Concorrência
 
@@ -460,6 +470,9 @@ Período planejado: 11/10 a 13/10.
 - [x] Definir autorização por função se viável.
 - [x] Proteger rotas apropriadas.
 - [x] Testar acesso autorizado e não autorizado.
+- [x] Implementar CLI administrativa de criação de usuários (`app/cli/create_user.py`, presente desde `92ddb88`), com senha solicitada no terminal e hash persistido.
+
+A implementação da CLI e seu uso no README estão confirmados; atualizar o texto ainda prospectivo da DEC-034 é uma pendência documental, registrada em TSK-8.5.
 
 ---
 
@@ -469,7 +482,9 @@ Meta: assegurar a estabilidade operacional da aplicação, a rastreabilidade do 
 
 Período planejado: 14/10 a 15/10.
 
-> **Nota histórica de escopo:** Esta fase foi originalmente planejada contemplando a preparação para defesa oral técnica. Com a dispensa da apresentação oral comunicada posteriormente pelos diretores responsáveis pelo processo seletivo, o escopo da etapa foi redirecionado para a auditoria de instalação limpa e a revisão minuciosa de qualidade técnica, integridade documental e conformidade com o barema de avaliação.
+> **Nota histórica de escopo:** Esta fase foi originalmente planejada contemplando a preparação para defesa oral técnica. A organização comunicou posteriormente ao desenvolvedor o cancelamento da defesa oral. O redirecionamento para auditoria e revisão de qualidade já foi registrado em `c58ad3b`; esta comunicação não é apresentada como alteração formal publicada no enunciado de referência. Permanecem preservadas as decisões arquiteturais, as justificativas técnicas e a responsabilidade de compreender a implementação.
+
+As conclusões de TSK-8.1 a TSK-8.4 são marcos históricos registrados em `c686612` (auditoria funcional), `051ee34` (Git), `11f8529` (banco do zero) e `c58ad3b` (instalação limpa). Não constituem nova execução dessas verificações nesta atualização nem encerram a validação final após as revisões.
 
 ### TSK-8.1 — Auditoria funcional
 
@@ -506,22 +521,51 @@ Período planejado: 14/10 a 15/10.
 
 Substitui a preparação para apresentação oral, concentrando o esforço na auditoria técnica e editorial minuciosa de cada arquivo entregue, executada sob o método rigoroso de **um arquivo por vez** (diagnóstico, proposta de alteração, correção, verificação, relatório individual e aprovação do desenvolvedor).
 
-- [ ] Revisão integral da documentação do projeto.
-- [ ] Revisão minuciosa dos comentários de código.
-- [ ] Alinhamento das informações documentadas com a implementação real.
+- [~] Revisão integral da documentação do projeto.
+- [~] Revisão minuciosa dos comentários de código.
+- [~] Alinhamento das informações documentadas com a implementação real.
 - [ ] Consistência dos schemas Pydantic e endpoints FastAPI.
-- [ ] Revisão do tratamento de erros e respostas HTTP.
-- [ ] Verificação específica do mecanismo de logging nos arquivos de produção.
-- [ ] Verificação de boas práticas e qualidade de código.
+- [~] Revisão do tratamento de erros e respostas HTTP.
+- [~] Verificação específica do mecanismo de logging nos arquivos de produção.
+- [~] Verificação de boas práticas e qualidade de código.
 - [ ] Preservação das regras transacionais e isolamento de concorrência.
 - [ ] Auditoria das referências à autoria técnica e ao apoio de ferramentas de IA.
 - [ ] Verificação de conformidade com os critérios do barema do processo seletivo.
 - [ ] Relatório consolidado da revisão de qualidade.
 - [ ] Validação final da suíte de testes e integridade do Git.
 
-#### Critérios de Avaliação do Barema (Referência para Verificação):
+#### Revisões registradas e evidências
 
-Os critérios obrigatórios totalizam 10 pontos. Os diferenciais avaliados (até 2 pontos adicionais) podem compensar eventuais deduções pontuais nos itens obrigatórios, respeitado o teto máximo de 10 pontos da avaliação geral.
+Os commits abaixo registram as revisões individuais já incorporadas. Sua conclusão não implica encerramento da revisão integral nem elimina os ajustes residuais identificados.
+
+| Arquivo | Revisão registrada | Evidência Git |
+|---|---|---|
+| `docs/DOMAIN_MODELING.md` | Sincronização da modelagem com a implementação; permanece o ajuste pontual descrito abaixo. | `e362010` |
+| `docs/PROJECT_PLAN.md` | Redirecionamento da revisão final já incorporado; esta atualização controlada aguarda revisão do desenvolvedor. | `c58ad3b`; alteração atual ainda não versionada |
+| `app/exceptions.py` | Contexto de requisição nos logs de exceções inesperadas. | `d2f643c` |
+| `app/main.py` | Configuração do logging da aplicação. | `e5e3752` |
+| `app/security/auth.py` | Simplificação do uso da sessão na autenticação. | `41154d3` |
+| `app/security/jwt.py` | Exigência de `sub` e `exp` e rejeição de `sub` vazio. | `45d546e` |
+| `tests/test_auth.py` | Ampliação dos testes JWT e dos contratos de falhas de login, incluindo hash não reconhecido. | `d7dcf98`, `a831afc` |
+| `app/security/passwords.py` | Esclarecimento dos contratos de hashing e verificação. | `a507b0d` |
+| `app/routers/auth.py` | Tipagem explícita da resposta de login e organização dos imports. | `0176e5c` |
+| `README.md` | Revisão de instalação, autenticação, testes, logging e referência do desafio. | `770ec94` |
+
+#### Pendências verificadas e critérios de encerramento
+
+- [ ] Atualizar `docs/DECISIONS.md`: PEND-007 ainda está como `PROPOSED`, embora o envelope de erros esteja implementado em `app/exceptions.py` e `app/schemas/erro.py`, com testes em `tests/test_erros.py`; a DEC-034 ainda prevê a CLI como futura, apesar da implementação e das instruções no README.
+- [ ] Ajustar a responsabilidade de Fornecedor na seção 4.2 de `docs/DOMAIN_MODELING.md`: o texto ainda descreve vínculo indireto com o histórico. A relação é direta e histórica por `MovimentacaoEstoque.fornecedor_id`, conforme DEC-010, modelo, migration inicial e demais trechos do próprio documento.
+- [ ] Auditar o OpenAPI atual por endpoint: parâmetros de path e query, schemas e corpos de requisição, respostas de sucesso e erro, códigos HTTP e exemplos exigidos pelo enunciado. As declarações existentes nos routers e schemas não comprovam, isoladamente, a completude dessa documentação.
+- [ ] Auditar o logging das ações críticas de estoque e sua aderência ao critério de avaliação: operações relevantes, sucessos em INFO, violações em WARNING e falhas em ERROR. Há configuração em `app/main.py` e registro de exceções inesperadas em `app/exceptions.py`, mas os routers de estoque não contêm chamadas de logging dessas ações; a revisão desses dois arquivos não encerra esta pendência.
+- [ ] Reexecutar a suíte completa após os ajustes finais, em banco de testes isolado, registrando resultado e revisão Git utilizada. Os 101 testes aprovados na execução anterior informada não comprovam execuções futuras.
+- [ ] Revalidar instalação limpa seguindo o README atualizado e aplicar as migrations do zero: `9a91e5d24c23` (schema inicial) → `13056bc612e1` (usuários). A cadeia está presente no repositório; sua reaplicação não foi executada nesta atualização documental.
+- [ ] Conferir o resultado do CI para a revisão de entrega, a sincronização efetiva com o remoto, a integridade dos links e a consistência final entre planejamento, decisões, modelagem, README e OpenAPI. A referência local `origin/main` não substitui a verificação do remoto.
+
+#### Critérios de Avaliação do Barema (Registro Histórico para Verificação):
+
+Os pesos e a interpretação de pontuação abaixo são preservados do planejamento registrado em `c58ad3b`, sem alteração nesta tarefa. Há divergências em relação à cópia de referência de versão não confirmada; confirmar os critérios aplicáveis com a organização permanece pendente. Este registro não comprova os pesos vigentes nem conformidade integral com o barema.
+
+Interpretação histórica: os critérios obrigatórios totalizariam 10 pontos; os diferenciais avaliados (até 2 pontos adicionais) poderiam compensar eventuais deduções pontuais nos itens obrigatórios, respeitado o teto máximo de 10 pontos da avaliação geral.
 
 - **Documentação e comentários (1 ponto):** Clareza técnica, README completo, registro explícito de decisões e comentários de código fundamentados.
 - **CRUD de entidades (2 pontos):** Integridade e regras de negócio de Categorias, Fornecedores e Produtos, incluindo unicidade e integridade referencial.
@@ -537,11 +581,11 @@ Os critérios obrigatórios totalizam 10 pontos. Os diferenciais avaliados (até
 
 ## 12. Entrega
 
-Data limite: 16/10/2026.
+Data limite vigente: **24/10/2026**, conforme comunicação posterior ao desenvolvedor. Prazo original preservado para rastreabilidade: **16/10/2026** (ver seção 1).
 
 - [ ] Confirmar repositório acessível.
 - [ ] Confirmar branch main atualizada.
-- [ ] Confirmar README final.
+- [x] Confirmar README revisado e versionado (`770ec94`); a conferência de integridade documental após os ajustes restantes permanece em TSK-8.5.
 - [ ] Confirmar Swagger funcional.
 - [ ] Confirmar ausência de credenciais.
 - [ ] Confirmar commit final.
