@@ -1,4 +1,10 @@
+import logging
+
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.main import app
 
 def criar_categoria(client):
     return client.post("/categorias", json={"nome": "Categoria Movimentacao"}).json()["id"]
@@ -264,3 +270,223 @@ def test_delete_fornecedor_com_historico(client):
     
     res_forn = client.get(f"/fornecedores/{forn_id}")
     assert res_forn.status_code == 200
+
+
+def test_logging_movimentacao_entrada_concluida(client, caplog):
+    caplog.set_level(logging.INFO, logger="app.routers.movimentacoes")
+    _, fornecedor_id, produto_id = setup_base(client)
+
+    response = client.post(
+        "/movimentacoes",
+        json={"produto_id": produto_id, "tipo": "ENTRADA", "quantidade": 10},
+    )
+
+    assert response.status_code == 201
+    movimento = response.json()
+    produto = client.get(f"/produtos/{produto_id}").json()
+    assert produto["quantidade_em_estoque"] == 10
+
+    eventos = [
+        record
+        for record in caplog.records
+        if record.name == "app.routers.movimentacoes"
+        and record.levelno == logging.INFO
+        and getattr(record, "event_type", None) == "stock_movement_completed"
+    ]
+    assert len(eventos) == 1
+
+    evento = eventos[0]
+    assert evento.movement_type == "ENTRADA"
+    assert evento.movement_id == movimento["id"]
+    assert evento.product_id == produto_id
+    assert evento.supplier_id == fornecedor_id
+    assert evento.quantity == 10
+    assert not any(
+        hasattr(evento, campo)
+        for campo in (
+            "password",
+            "password_hash",
+            "jwt",
+            "authorization",
+            "jwt_secret_key",
+            "db_password",
+        )
+    )
+
+
+def test_logging_movimentacao_saida_concluida(client, caplog):
+    caplog.set_level(logging.INFO, logger="app.routers.movimentacoes")
+    _, fornecedor_id, produto_id = setup_base(client)
+    entrada = client.post(
+        "/movimentacoes",
+        json={"produto_id": produto_id, "tipo": "ENTRADA", "quantidade": 10},
+    )
+    assert entrada.status_code == 201
+    caplog.clear()
+
+    response = client.post(
+        "/movimentacoes",
+        json={"produto_id": produto_id, "tipo": "SAIDA", "quantidade": 4},
+    )
+
+    assert response.status_code == 201
+    movimento = response.json()
+    produto = client.get(f"/produtos/{produto_id}").json()
+    assert produto["quantidade_em_estoque"] == 6
+
+    eventos = [
+        record
+        for record in caplog.records
+        if record.name == "app.routers.movimentacoes"
+        and record.levelno == logging.INFO
+        and getattr(record, "event_type", None) == "stock_movement_completed"
+    ]
+    assert len(eventos) == 1
+
+    evento = eventos[0]
+    assert evento.movement_type == "SAIDA"
+    assert evento.movement_id == movimento["id"]
+    assert evento.product_id == produto_id
+    assert evento.supplier_id == fornecedor_id
+    assert evento.quantity == 4
+
+    rejeicoes = [
+        record
+        for record in caplog.records
+        if record.name == "app.routers.movimentacoes"
+        and record.levelno == logging.WARNING
+        and getattr(record, "event_type", None)
+        == "stock_exit_rejected_insufficient_stock"
+    ]
+    assert rejeicoes == []
+
+
+def test_logging_movimentacao_saida_rejeitada(client, caplog):
+    caplog.set_level(logging.INFO, logger="app.routers.movimentacoes")
+    _, _, produto_id = setup_base(client)
+    entrada = client.post(
+        "/movimentacoes",
+        json={"produto_id": produto_id, "tipo": "ENTRADA", "quantidade": 10},
+    )
+    assert entrada.status_code == 201
+
+    historico_antes = client.get("/movimentacoes").json()
+    caplog.clear()
+
+    response = client.post(
+        "/movimentacoes",
+        json={"produto_id": produto_id, "tipo": "SAIDA", "quantidade": 11},
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "status": 409,
+        "error": "conflict",
+        "message": "Estoque insuficiente para a saída solicitada.",
+        "details": None,
+    }
+    produto = client.get(f"/produtos/{produto_id}").json()
+    assert produto["quantidade_em_estoque"] == 10
+    assert client.get("/movimentacoes").json() == historico_antes
+
+    rejeicoes = [
+        record
+        for record in caplog.records
+        if record.name == "app.routers.movimentacoes"
+        and record.levelno == logging.WARNING
+        and getattr(record, "event_type", None)
+        == "stock_exit_rejected_insufficient_stock"
+    ]
+    assert len(rejeicoes) == 1
+
+    rejeicao = rejeicoes[0]
+    assert rejeicao.product_id == produto_id
+    assert rejeicao.requested_quantity == 11
+    assert rejeicao.available_quantity == 10
+    assert not any(
+        hasattr(rejeicao, campo)
+        for campo in (
+            "password",
+            "password_hash",
+            "jwt",
+            "authorization",
+            "jwt_secret_key",
+            "db_password",
+        )
+    )
+
+    conclusoes = [
+        record
+        for record in caplog.records
+        if record.name == "app.routers.movimentacoes"
+        and record.levelno == logging.INFO
+        and getattr(record, "event_type", None) == "stock_movement_completed"
+    ]
+    assert conclusoes == []
+
+
+def test_logging_movimentacao_falha_no_commit(
+    client,
+    admin_headers,
+    caplog,
+    monkeypatch,
+):
+    _, _, produto_id = setup_base(client)
+    historico_antes = client.get("/movimentacoes").json()
+
+    caplog.set_level(logging.ERROR, logger="app.exceptions")
+    caplog.set_level(logging.INFO, logger="app.routers.movimentacoes")
+    caplog.clear()
+
+    rollback_original = Session.rollback
+    rollbacks = []
+
+    def commit_com_falha(_session):
+        raise RuntimeError("falha controlada no commit da movimentação")
+
+    def rollback_monitorado(session):
+        rollbacks.append(True)
+        return rollback_original(session)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Session, "commit", commit_com_falha)
+        patch.setattr(Session, "rollback", rollback_monitorado)
+
+        with TestClient(app, raise_server_exceptions=False) as client_com_falha:
+            client_com_falha.headers.update(admin_headers)
+            response = client_com_falha.post(
+                "/movimentacoes",
+                json={"produto_id": produto_id, "tipo": "ENTRADA", "quantidade": 5},
+            )
+
+    assert response.status_code == 500
+    assert response.json() == {
+        "status": 500,
+        "error": "internal_error",
+        "message": "Erro interno do servidor.",
+        "details": None,
+    }
+    assert "falha controlada no commit da movimentação" not in response.text
+    assert rollbacks
+
+    conclusoes = [
+        record
+        for record in caplog.records
+        if record.name == "app.routers.movimentacoes"
+        and record.levelno == logging.INFO
+        and getattr(record, "event_type", None) == "stock_movement_completed"
+    ]
+    assert conclusoes == []
+
+    falhas_inesperadas = [
+        record
+        for record in caplog.records
+        if record.name == "app.exceptions"
+        and record.levelno == logging.ERROR
+        and getattr(record, "event_type", None) == "unhandled_exception"
+    ]
+    assert len(falhas_inesperadas) == 1
+
+    produto = client.get(f"/produtos/{produto_id}").json()
+    assert produto["quantidade_em_estoque"] == 0
+    assert client.get("/movimentacoes").json() == historico_antes
