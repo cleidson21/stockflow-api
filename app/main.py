@@ -33,7 +33,20 @@ add_exception_handlers(app)
 @app.get(
     "/",
     summary="Root Endpoint",
-    description="Retorna o status básico do projeto."
+    description="Retorna o status básico do projeto.",
+    responses={
+        200: {
+            "description": "Status básico do projeto.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "project": "StockFlow API",
+                        "status": "running",
+                    }
+                }
+            },
+        }
+    },
 )
 def root():
     return {"project": "StockFlow API", "status": "running"}
@@ -43,6 +56,18 @@ def root():
     "/health",
     summary="Health check",
     description="Confirma que a aplicação está em execução e consegue responder a requisições HTTP.",
+    responses={
+        200: {
+            "description": "Aplicação disponível para responder a requisições HTTP.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "healthy",
+                    }
+                }
+            },
+        }
+    },
 )
 def health():
     return {"status": "healthy"}

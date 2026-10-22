@@ -397,9 +397,9 @@ Período planejado: 09/10 a 10/10.
 
 ### TSK-6.4 — OpenAPI/Swagger
 
-Os itens abaixo registram a documentação implementada desde `1b9aa82` e `c686612`. A auditoria posterior foi concluída por arquivo e consolidada nas revisões 15.1 (`e9506c5`), 15.2 (`e844dbd`), 19 (`9343023`), 20 (`d9bebc4`), 21 (`12e289d`) e 22 (`081a607`). Esses commits estão publicados em `main` e integram a revisão aprovada pelo workflow atual.
+Os itens abaixo registram a documentação implementada desde `1b9aa82` e `c686612`. A auditoria posterior foi concluída por arquivo e consolidada nas revisões 15.1 (`e9506c5`), 15.2 (`e844dbd`), 19 (`9343023`), 20 (`d9bebc4`), 21 (`12e289d`) e 22 (`081a607`). A consolidação final do planejamento foi versionada em `b796344` e validada pelo workflow **Tests** `39792984284`.
 
-O OpenAPI gerado em memória no commit `081a607` possui **12 caminhos e 22 operações**. As 22 operações têm `summary` e `description`; as 20 operações de negócio possuem exemplos documentais, enquanto `GET /` e `GET /health` permanecem sem exemplos explícitos de resposta. As 19 operações protegidas mantêm `HTTPBearer`; `POST /auth/login` continua público. As 20 operações com resposta 401 pertinente — login e rotas protegidas — documentam `WWW-Authenticate: Bearer`. Os filtros de movimentações registram opcionalidade, combinação, limites inclusivos, timezone e referência histórica do fornecedor. `ErrorResponse` e `ValidationErrorResponse` permanecem como modelos padronizados.
+O OpenAPI consolidado possui **12 caminhos e 22 operações**. As 22 operações têm `summary`, `description` e exemplos representativos; esta revisão final expressa complementou os exemplos de resposta HTTP 200 de `GET /` e `GET /health`, preservando seus retornos reais e o acesso público. As 19 operações protegidas mantêm `HTTPBearer`; `POST /auth/login` continua público. As 20 operações com resposta 401 pertinente — login e rotas protegidas — documentam `WWW-Authenticate: Bearer`. Os filtros de movimentações registram opcionalidade, combinação, limites inclusivos, timezone e referência histórica do fornecedor. `ErrorResponse` e `ValidationErrorResponse` permanecem como modelos padronizados.
 
 Os preços de Produto continuam modelados como `Decimal` e documentados em `app/schemas/produto.py`. O JSON Schema gerado aceita os ramos estruturais `number` e `string`; essa representação não expressa de forma integral, em todos os consumidores OpenAPI, as regras decimais aplicadas pelo Pydantic (`max_digits` e `decimal_places`). A documentação não deve ser interpretada como equivalência total entre JSON Schema e validação em runtime.
 
@@ -435,7 +435,7 @@ Período planejado: 11/10 a 13/10.
 
 A suíte atual possui **105 casos automatizados**. O commit `c450970` acrescentou quatro testes em `tests/test_movimentacoes.py` para verificar: movimentação de `ENTRADA` concluída; movimentação de `SAIDA` concluída; `SAIDA` rejeitada por saldo insuficiente; e falha controlada no commit, sem emissão indevida de sucesso. O resultado exato registrado no README para esse commit foi `105 passed, 12 warnings in 7.82s`.
 
-Nenhum arquivo de teste foi alterado entre `c450970` e o commit atual `081a607`; portanto, a coleção permanece com os mesmos 105 casos, sem confundir funções Python com casos parametrizados coletados. O workflow público do commit `081a607` concluiu migrations, `alembic current` e a etapa `pytest -q` com sucesso. A API pública do GitHub confirmou o resultado do job, mas não expôs seu log textual sem autenticação; por isso, o tempo de 7.82s e a contagem de 12 warnings continuam atribuídos à execução de `c450970`, não ao job atual. Esse total não representa cobertura de código de 100%.
+Nenhum arquivo de teste foi alterado entre `c450970` e a consolidação `b796344`; portanto, a coleção permaneceu com os mesmos 105 casos, sem confundir funções Python com casos parametrizados coletados. O workflow **Tests** `39792984284`, correspondente a `b796344`, concluiu instalação de dependências, migrations, `alembic current` e `pytest -q` com sucesso: `105 passed, 12 warnings in 9.10s`. Esse total não representa cobertura de código de 100%.
 
 - [x] Definir estratégia de testes.
 - [x] Configurar framework.
@@ -455,7 +455,7 @@ Nenhum arquivo de teste foi alterado entre `c450970` e o commit atual `081a607`;
 - [x] Executar testes automaticamente.
 - [x] Garantir falha do workflow quando testes falharem.
 
-O workflow `.github/workflows/tests.yml` configura Python 3.12, PostgreSQL 16, instalação de dependências, `alembic upgrade head`, `alembic current` e `pytest -q` em pushes e pull requests para `main`. Para o commit `081a607`, o [workflow público Tests](https://github.com/cleidson21/stockflow-api/actions/runs/39709791201) (`39709791201`) e o job `test` (`119598128890`) foram verificados como `completed/success`. Essa evidência cobre a revisão publicada até esse commit; não cobre a alteração ainda não versionada deste plano.
+O workflow `.github/workflows/tests.yml` configura Python 3.12, PostgreSQL 16, instalação de dependências, `alembic upgrade head`, `alembic current` e `pytest -q` em pushes e pull requests para `main`. Para a consolidação `b796344`, o [workflow público Tests](https://github.com/cleidson21/stockflow-api/actions/runs/39792984284) (`39792984284`) foi verificado como `completed/success`, com migrations e `pytest` aprovados. Alterações posteriores devem possuir validação própria antes da submissão, sem antecipar o SHA ou o resultado de uma execução futura.
 
 ### TSK-7.3 — Concorrência
 
@@ -538,10 +538,10 @@ Substitui a preparação para apresentação oral, concentrando o esforço na au
 - [x] Preservação das regras transacionais e isolamento de concorrência nas revisões executadas.
 - [x] Auditoria das referências à autoria técnica e ao apoio de ferramentas de IA.
 - [x] Verificação de conformidade com a cópia de referência disponível, de versão não confirmada.
-- [~] Relatório consolidado da revisão de qualidade — esta atualização aguarda revisão e versionamento.
-- [~] Validação final da suíte de testes e integridade do Git — concluída até `081a607`; pendente para esta alteração documental.
+- [x] Relatório consolidado da revisão de qualidade — versionado em `b796344`.
+- [~] Validação final da suíte de testes e integridade do Git — concluída para `b796344`; alterações posteriores exigem validação própria.
 
-A revisão integral da documentação abrangeu `README.md`, `docs/DECISIONS.md`, `docs/DOMAIN_MODELING.md`, este plano e o enunciado de referência. Permanece em andamento apenas porque a presente reconciliação ainda não foi revisada e versionada. A revisão minuciosa de comentários continua parcial: comentários relevantes a transações, autenticação, erros e logging foram inspecionados, mas não houve uma auditoria linha a linha de comentários em todos os arquivos do repositório.
+A revisão integral da documentação abrangeu `README.md`, `docs/DECISIONS.md`, `docs/DOMAIN_MODELING.md`, este plano e o enunciado de referência, com consolidação versionada em `b796344`. A revisão minuciosa de comentários continua parcial: comentários relevantes a transações, autenticação, erros e logging foram inspecionados, mas não houve uma auditoria linha a linha de comentários em todos os arquivos do repositório.
 
 O logging verificado distingue três eventos: `stock_movement_completed` em `INFO` após commit e refresh; `stock_exit_rejected_insufficient_stock` em `WARNING` antes do 409; e `unhandled_exception` em `ERROR` pelo handler global. Os dois primeiros são eventos operacionais; o terceiro registra falhas inesperadas. Esses registros usam `LogRecord.extra` com formatter textual, não logging JSON, não possuem promessa de sanitização universal e não substituem o histórico de movimentações persistido no PostgreSQL.
 
@@ -553,7 +553,7 @@ Os commits abaixo registram as revisões individuais já incorporadas. Sua concl
 |---|---|---|
 | `docs/DECISIONS.md` | Resolução de PEND-007 e atualização da DEC-034 com o estado real da CLI. | `2d0277f` |
 | `docs/DOMAIN_MODELING.md` | Sincronização geral e correção do vínculo histórico direto de fornecedor. | `e362010`, `c7edc0d` |
-| `docs/PROJECT_PLAN.md` | Redirecionamento da revisão final e atualização de prazo já publicados; a presente consolidação ainda não é um commit. | `c58ad3b`, `432e9d5`; alteração atual não versionada |
+| `docs/PROJECT_PLAN.md` | Redirecionamento da revisão final, atualização de prazo e consolidação das evidências de entrega. | `c58ad3b`, `432e9d5`, `b796344` |
 | `app/exceptions.py` | Contexto de requisição nos logs de exceções inesperadas. | `d2f643c` |
 | `app/main.py` | Configuração do logging da aplicação. | `e5e3752` |
 | `app/security/auth.py` | Simplificação do uso da sessão na autenticação. | `41154d3` |
@@ -573,11 +573,11 @@ Os commits abaixo registram as revisões individuais já incorporadas. Sua concl
 
 - [x] PEND-007 e DEC-034 reconciliadas em `docs/DECISIONS.md` por `2d0277f`, preservando contexto e registrando a implementação efetiva.
 - [x] Responsabilidade histórica direta de `MovimentacaoEstoque.fornecedor_id` corrigida em `docs/DOMAIN_MODELING.md` por `c7edc0d`.
-- [x] OpenAPI auditado por router: 12 caminhos, 22 operações, schemas, parâmetros, respostas, exemplos, papéis, filtros, login público e headers 401 pertinentes; revisões 15.1, 15.2 e 19–22 publicadas e cumulativamente aprovadas no CI de `081a607`.
+- [x] OpenAPI auditado por router: 12 caminhos, 22 operações, schemas, parâmetros, respostas, exemplos, papéis, filtros, login público e headers 401 pertinentes; revisões 15.1, 15.2 e 19–22 publicadas e consolidadas em `b796344`. Esta revisão final expressa complementa os exemplos HTTP 200 de `GET /` e `GET /health`; sua rastreabilidade pertence ao commit que contiver esta versão do arquivo, sem antecipação de hash.
 - [x] Logging de estoque auditado e testado: sucessos em `INFO`, rejeição por regra em `WARNING` e falhas inesperadas em `ERROR`, sem confusão com o histórico persistido.
-- [~] Suíte completa aprovada no CI de `081a607`, com a coleção de 105 casos preservada desde `c450970`; uma nova execução para a presente alteração documental dependerá de seu commit.
+- [x] Suíte completa aprovada no CI de `b796344`: `105 passed, 12 warnings in 9.10s`, com a coleção preservada desde `c450970`.
 - [ ] Revalidar instalação limpa seguindo o README atualizado e aplicar as migrations do zero: `9a91e5d24c23` (schema inicial) → `13056bc612e1` (usuários). A cadeia está presente no repositório; sua reaplicação não foi executada nesta atualização documental.
-- [~] CI, remoto público, `main`, links e consistência documental foram conferidos até `081a607`; a presente alteração ainda precisa ser revisada, versionada e validada antes da entrega.
+- [x] CI, remoto público, `main`, links e consistência documental foram conferidos para `b796344`. O processo de entrega deve repetir a conferência para o SHA efetivamente submetido.
 
 #### Critérios de Avaliação do Barema (Registro Histórico para Verificação):
 
@@ -612,14 +612,14 @@ Essa cópia foi obtida de terceiro e sua versão não foi confirmada como a vige
 Data limite vigente: **24/10/2026**, conforme comunicação posterior ao desenvolvedor. Prazo original preservado para rastreabilidade: **16/10/2026** (ver seção 1).
 
 - [x] Confirmar repositório público e acessível em `https://github.com/cleidson21/stockflow-api`.
-- [~] Confirmar branch `main` atualizada: `HEAD` e `origin/main` coincidiam em `081a607` no início desta revisão; a presente alteração ainda não está versionada.
+- [x] Confirmar branch `main` sincronizada na consolidação `b796344`.
 - [x] Confirmar README revisado e versionado (`770ec94`, `c59b90b`).
-- [x] Confirmar OpenAPI gerável com 12 caminhos e 22 operações no commit `081a607`.
+- [x] Confirmar OpenAPI gerável com 12 caminhos, 22 operações e exemplos representativos; os exemplos HTTP 200 de `GET /` e `GET /health` foram complementados nesta revisão final expressa.
 - [x] Confirmar ausência de `.env`, bancos locais e credenciais reais identificáveis entre os arquivos rastreados; isso não constitui garantia universal contra todo segredo possível.
-- [x] Confirmar migrations `9a91e5d24c23` e `13056bc612e1`, aplicadas pelo CI atual.
-- [x] Confirmar workflow **Tests** aprovado em `081a607`, incluindo `pytest -q` sobre a coleção inalterada de 105 casos.
-- [x] Confirmar integridade do histórico Git e presença de Conventional Commits até `081a607`.
-- [ ] Confirmar commit final incluindo esta consolidação documental.
+- [x] Confirmar migrations `9a91e5d24c23` e `13056bc612e1`, aplicadas pelo CI de `b796344`.
+- [x] Confirmar workflow **Tests** `39792984284` aprovado em `b796344`: `105 passed, 12 warnings in 9.10s`.
+- [x] Confirmar integridade do histórico Git e presença de Conventional Commits até `b796344`.
+- [ ] Confirmar, no momento da submissão, o SHA final e o CI correspondente.
 - [ ] Enviar link do repositório conforme instruções do desafio.
 
 O CI aprovado não equivale à submissão formal. O envio do link permanece aberto até confirmação expressa do desenvolvedor.
