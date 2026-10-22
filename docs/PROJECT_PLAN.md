@@ -397,7 +397,11 @@ Período planejado: 09/10 a 10/10.
 
 ### TSK-6.4 — OpenAPI/Swagger
 
-Os itens abaixo registram a documentação implementada e a auditoria anterior (`1b9aa82` e `c686612`). A conferência integral do OpenAPI atual, incluindo exemplos e correspondência entre respostas documentadas e reais, permanece pendente em TSK-8.5.
+Os itens abaixo registram a documentação implementada desde `1b9aa82` e `c686612`. A auditoria posterior foi concluída por arquivo e consolidada nas revisões 15.1 (`e9506c5`), 15.2 (`e844dbd`), 19 (`9343023`), 20 (`d9bebc4`), 21 (`12e289d`) e 22 (`081a607`). Esses commits estão publicados em `main` e integram a revisão aprovada pelo workflow atual.
+
+O OpenAPI gerado em memória no commit `081a607` possui **12 caminhos e 22 operações**. As 22 operações têm `summary` e `description`; as 20 operações de negócio possuem exemplos documentais, enquanto `GET /` e `GET /health` permanecem sem exemplos explícitos de resposta. As 19 operações protegidas mantêm `HTTPBearer`; `POST /auth/login` continua público. As 20 operações com resposta 401 pertinente — login e rotas protegidas — documentam `WWW-Authenticate: Bearer`. Os filtros de movimentações registram opcionalidade, combinação, limites inclusivos, timezone e referência histórica do fornecedor. `ErrorResponse` e `ValidationErrorResponse` permanecem como modelos padronizados.
+
+Os preços de Produto continuam modelados como `Decimal` e documentados em `app/schemas/produto.py`. O JSON Schema gerado aceita os ramos estruturais `number` e `string`; essa representação não expressa de forma integral, em todos os consumidores OpenAPI, as regras decimais aplicadas pelo Pydantic (`max_digits` e `decimal_places`). A documentação não deve ser interpretada como equivalência total entre JSON Schema e validação em runtime.
 
 - [x] Documentar cada endpoint.
 - [x] Documentar parâmetros.
@@ -429,7 +433,9 @@ Período planejado: 11/10 a 13/10.
 
 ### TSK-7.1 — Testes automatizados
 
-A suíte atual possui **101 testes automatizados**, aprovados na última execução completa informada pelo desenvolvedor e registrada no README. Nesta atualização, a coleta com `pytest --collect-only` confirmou os 101 casos, sem executar a suíte. Esse total não representa cobertura de 100% do código nem substitui a validação final pendente.
+A suíte atual possui **105 casos automatizados**. O commit `c450970` acrescentou quatro testes em `tests/test_movimentacoes.py` para verificar: movimentação de `ENTRADA` concluída; movimentação de `SAIDA` concluída; `SAIDA` rejeitada por saldo insuficiente; e falha controlada no commit, sem emissão indevida de sucesso. O resultado exato registrado no README para esse commit foi `105 passed, 12 warnings in 7.82s`.
+
+Nenhum arquivo de teste foi alterado entre `c450970` e o commit atual `081a607`; portanto, a coleção permanece com os mesmos 105 casos, sem confundir funções Python com casos parametrizados coletados. O workflow público do commit `081a607` concluiu migrations, `alembic current` e a etapa `pytest -q` com sucesso. A API pública do GitHub confirmou o resultado do job, mas não expôs seu log textual sem autenticação; por isso, o tempo de 7.82s e a contagem de 12 warnings continuam atribuídos à execução de `c450970`, não ao job atual. Esse total não representa cobertura de código de 100%.
 
 - [x] Definir estratégia de testes.
 - [x] Configurar framework.
@@ -441,6 +447,7 @@ A suíte atual possui **101 testes automatizados**, aprovados na última execuç
 - [x] Testar imutabilidade.
 - [x] Testar consultas avançadas.
 - [x] Testar erros relevantes.
+- [x] Testar o logging operacional de movimentações e a ausência de sucesso após falha no commit.
 
 ### TSK-7.2 — Integração contínua
 
@@ -448,7 +455,7 @@ A suíte atual possui **101 testes automatizados**, aprovados na última execuç
 - [x] Executar testes automaticamente.
 - [x] Garantir falha do workflow quando testes falharem.
 
-O workflow `.github/workflows/tests.yml` configura Python 3.12, PostgreSQL 16, instalação de dependências, `alembic upgrade head`, `alembic current` e `pytest -q` em pushes e pull requests para `main`. Sua presença comprova a configuração; o resultado remoto da execução correspondente à entrega ainda deve ser conferido.
+O workflow `.github/workflows/tests.yml` configura Python 3.12, PostgreSQL 16, instalação de dependências, `alembic upgrade head`, `alembic current` e `pytest -q` em pushes e pull requests para `main`. Para o commit `081a607`, o [workflow público Tests](https://github.com/cleidson21/stockflow-api/actions/runs/39709791201) (`39709791201`) e o job `test` (`119598128890`) foram verificados como `completed/success`. Essa evidência cobre a revisão publicada até esse commit; não cobre a alteração ainda não versionada deste plano.
 
 ### TSK-7.3 — Concorrência
 
@@ -472,7 +479,7 @@ O workflow `.github/workflows/tests.yml` configura Python 3.12, PostgreSQL 16, i
 - [x] Testar acesso autorizado e não autorizado.
 - [x] Implementar CLI administrativa de criação de usuários (`app/cli/create_user.py`, presente desde `92ddb88`), com senha solicitada no terminal e hash persistido.
 
-A implementação da CLI e seu uso no README estão confirmados; atualizar o texto ainda prospectivo da DEC-034 é uma pendência documental, registrada em TSK-8.5.
+A implementação da CLI e seu uso no README estão confirmados. O texto prospectivo da DEC-034 foi reconciliado em `2d0277f`, preservando a decisão original e registrando a implementação efetiva de `app/cli/create_user.py` desde `92ddb88`.
 
 ---
 
@@ -523,16 +530,20 @@ Substitui a preparação para apresentação oral, concentrando o esforço na au
 
 - [~] Revisão integral da documentação do projeto.
 - [~] Revisão minuciosa dos comentários de código.
-- [~] Alinhamento das informações documentadas com a implementação real.
-- [ ] Consistência dos schemas Pydantic e endpoints FastAPI.
-- [~] Revisão do tratamento de erros e respostas HTTP.
-- [~] Verificação específica do mecanismo de logging nos arquivos de produção.
+- [x] Alinhamento das informações documentadas com a implementação real nos arquivos revisados.
+- [x] Consistência dos schemas Pydantic e endpoints FastAPI cobertos pelas auditorias OpenAPI.
+- [x] Revisão do tratamento de erros e respostas HTTP.
+- [x] Verificação específica do mecanismo de logging operacional e seus testes.
 - [~] Verificação de boas práticas e qualidade de código.
-- [ ] Preservação das regras transacionais e isolamento de concorrência.
-- [ ] Auditoria das referências à autoria técnica e ao apoio de ferramentas de IA.
-- [ ] Verificação de conformidade com os critérios do barema do processo seletivo.
-- [ ] Relatório consolidado da revisão de qualidade.
-- [ ] Validação final da suíte de testes e integridade do Git.
+- [x] Preservação das regras transacionais e isolamento de concorrência nas revisões executadas.
+- [x] Auditoria das referências à autoria técnica e ao apoio de ferramentas de IA.
+- [x] Verificação de conformidade com a cópia de referência disponível, de versão não confirmada.
+- [~] Relatório consolidado da revisão de qualidade — esta atualização aguarda revisão e versionamento.
+- [~] Validação final da suíte de testes e integridade do Git — concluída até `081a607`; pendente para esta alteração documental.
+
+A revisão integral da documentação abrangeu `README.md`, `docs/DECISIONS.md`, `docs/DOMAIN_MODELING.md`, este plano e o enunciado de referência. Permanece em andamento apenas porque a presente reconciliação ainda não foi revisada e versionada. A revisão minuciosa de comentários continua parcial: comentários relevantes a transações, autenticação, erros e logging foram inspecionados, mas não houve uma auditoria linha a linha de comentários em todos os arquivos do repositório.
+
+O logging verificado distingue três eventos: `stock_movement_completed` em `INFO` após commit e refresh; `stock_exit_rejected_insufficient_stock` em `WARNING` antes do 409; e `unhandled_exception` em `ERROR` pelo handler global. Os dois primeiros são eventos operacionais; o terceiro registra falhas inesperadas. Esses registros usam `LogRecord.extra` com formatter textual, não logging JSON, não possuem promessa de sanitização universal e não substituem o histórico de movimentações persistido no PostgreSQL.
 
 #### Revisões registradas e evidências
 
@@ -540,30 +551,39 @@ Os commits abaixo registram as revisões individuais já incorporadas. Sua concl
 
 | Arquivo | Revisão registrada | Evidência Git |
 |---|---|---|
-| `docs/DOMAIN_MODELING.md` | Sincronização da modelagem com a implementação; permanece o ajuste pontual descrito abaixo. | `e362010` |
-| `docs/PROJECT_PLAN.md` | Redirecionamento da revisão final já incorporado; esta atualização controlada aguarda revisão do desenvolvedor. | `c58ad3b`; alteração atual ainda não versionada |
+| `docs/DECISIONS.md` | Resolução de PEND-007 e atualização da DEC-034 com o estado real da CLI. | `2d0277f` |
+| `docs/DOMAIN_MODELING.md` | Sincronização geral e correção do vínculo histórico direto de fornecedor. | `e362010`, `c7edc0d` |
+| `docs/PROJECT_PLAN.md` | Redirecionamento da revisão final e atualização de prazo já publicados; a presente consolidação ainda não é um commit. | `c58ad3b`, `432e9d5`; alteração atual não versionada |
 | `app/exceptions.py` | Contexto de requisição nos logs de exceções inesperadas. | `d2f643c` |
 | `app/main.py` | Configuração do logging da aplicação. | `e5e3752` |
 | `app/security/auth.py` | Simplificação do uso da sessão na autenticação. | `41154d3` |
 | `app/security/jwt.py` | Exigência de `sub` e `exp` e rejeição de `sub` vazio. | `45d546e` |
 | `tests/test_auth.py` | Ampliação dos testes JWT e dos contratos de falhas de login, incluindo hash não reconhecido. | `d7dcf98`, `a831afc` |
 | `app/security/passwords.py` | Esclarecimento dos contratos de hashing e verificação. | `a507b0d` |
-| `app/routers/auth.py` | Tipagem explícita da resposta de login e organização dos imports. | `0176e5c` |
-| `README.md` | Revisão de instalação, autenticação, testes, logging e referência do desafio. | `770ec94` |
+| `app/schemas/produto.py` | Revisão 15.1: restrições e exemplos dos preços `Decimal`. | `e9506c5` |
+| `app/routers/movimentacoes.py` | Revisões 15.2 e 16.1: OpenAPI das movimentações e logging operacional. | `e844dbd` |
+| `tests/test_movimentacoes.py` | Revisão 16.2: quatro cenários do logging operacional. | `c450970` |
+| `app/routers/produtos.py` | Revisão 19: documentação OpenAPI das seis operações. | `9343023` |
+| `app/routers/categorias.py` | Revisão 20: documentação OpenAPI das cinco operações. | `d9bebc4` |
+| `app/routers/fornecedores.py` | Revisão 21: documentação OpenAPI das cinco operações. | `12e289d` |
+| `app/routers/auth.py` | Tipagem do login e Revisão 22 da documentação OpenAPI pública. | `0176e5c`, `081a607` |
+| `README.md` | Revisões de instalação, autenticação, logging, testes e referência do desafio. | `770ec94`, `c59b90b` |
 
 #### Pendências verificadas e critérios de encerramento
 
-- [ ] Atualizar `docs/DECISIONS.md`: PEND-007 ainda está como `PROPOSED`, embora o envelope de erros esteja implementado em `app/exceptions.py` e `app/schemas/erro.py`, com testes em `tests/test_erros.py`; a DEC-034 ainda prevê a CLI como futura, apesar da implementação e das instruções no README.
-- [ ] Ajustar a responsabilidade de Fornecedor na seção 4.2 de `docs/DOMAIN_MODELING.md`: o texto ainda descreve vínculo indireto com o histórico. A relação é direta e histórica por `MovimentacaoEstoque.fornecedor_id`, conforme DEC-010, modelo, migration inicial e demais trechos do próprio documento.
-- [ ] Auditar o OpenAPI atual por endpoint: parâmetros de path e query, schemas e corpos de requisição, respostas de sucesso e erro, códigos HTTP e exemplos exigidos pelo enunciado. As declarações existentes nos routers e schemas não comprovam, isoladamente, a completude dessa documentação.
-- [ ] Auditar o logging das ações críticas de estoque e sua aderência ao critério de avaliação: operações relevantes, sucessos em INFO, violações em WARNING e falhas em ERROR. Há configuração em `app/main.py` e registro de exceções inesperadas em `app/exceptions.py`, mas os routers de estoque não contêm chamadas de logging dessas ações; a revisão desses dois arquivos não encerra esta pendência.
-- [ ] Reexecutar a suíte completa após os ajustes finais, em banco de testes isolado, registrando resultado e revisão Git utilizada. Os 101 testes aprovados na execução anterior informada não comprovam execuções futuras.
+- [x] PEND-007 e DEC-034 reconciliadas em `docs/DECISIONS.md` por `2d0277f`, preservando contexto e registrando a implementação efetiva.
+- [x] Responsabilidade histórica direta de `MovimentacaoEstoque.fornecedor_id` corrigida em `docs/DOMAIN_MODELING.md` por `c7edc0d`.
+- [x] OpenAPI auditado por router: 12 caminhos, 22 operações, schemas, parâmetros, respostas, exemplos, papéis, filtros, login público e headers 401 pertinentes; revisões 15.1, 15.2 e 19–22 publicadas e cumulativamente aprovadas no CI de `081a607`.
+- [x] Logging de estoque auditado e testado: sucessos em `INFO`, rejeição por regra em `WARNING` e falhas inesperadas em `ERROR`, sem confusão com o histórico persistido.
+- [~] Suíte completa aprovada no CI de `081a607`, com a coleção de 105 casos preservada desde `c450970`; uma nova execução para a presente alteração documental dependerá de seu commit.
 - [ ] Revalidar instalação limpa seguindo o README atualizado e aplicar as migrations do zero: `9a91e5d24c23` (schema inicial) → `13056bc612e1` (usuários). A cadeia está presente no repositório; sua reaplicação não foi executada nesta atualização documental.
-- [ ] Conferir o resultado do CI para a revisão de entrega, a sincronização efetiva com o remoto, a integridade dos links e a consistência final entre planejamento, decisões, modelagem, README e OpenAPI. A referência local `origin/main` não substitui a verificação do remoto.
+- [~] CI, remoto público, `main`, links e consistência documental foram conferidos até `081a607`; a presente alteração ainda precisa ser revisada, versionada e validada antes da entrega.
 
 #### Critérios de Avaliação do Barema (Registro Histórico para Verificação):
 
-Os pesos e a interpretação de pontuação abaixo são preservados do planejamento registrado em `c58ad3b`, sem alteração nesta tarefa. Há divergências em relação à cópia de referência de versão não confirmada; confirmar os critérios aplicáveis com a organização permanece pendente. Este registro não comprova os pesos vigentes nem conformidade integral com o barema.
+Os pesos e a interpretação de pontuação abaixo são preservados do planejamento registrado em `c58ad3b`. A divergência com a cópia de referência disponível é explicitada sem reescrever silenciosamente o registro histórico. Este documento não estima nota final nem comprova quais pesos são oficialmente vigentes.
+
+##### A. Interpretação histórica registrada
 
 Interpretação histórica: os critérios obrigatórios totalizariam 10 pontos; os diferenciais avaliados (até 2 pontos adicionais) poderiam compensar eventuais deduções pontuais nos itens obrigatórios, respeitado o teto máximo de 10 pontos da avaliação geral.
 
@@ -577,19 +597,32 @@ Interpretação histórica: os critérios obrigatórios totalizariam 10 pontos; 
   - Autenticação e autorização RBAC via JWT (até 1 ponto).
   - Testes automatizados abrangentes com pytest (até 1 ponto).
 
+##### B. Pesos presentes no enunciado de referência disponível
+
+A cópia em `docs/referencias/prosel-2026.2/desafio-tecnico-backend-prosel-2026.2.md` distribui **8 pontos básicos**: Documentação e Comentários (1), CRUD (1), Consultas Avançadas (1), Tratamento de Erros e Logging (2), Commits Padronizados (1) e Qualidade de Código (2). Os diferenciais somam **até 2 pontos extras**: Autenticação e Segurança (0,5), Testes Automatizados (0,5) e Concorrência (1). O máximo geral indicado é 10.
+
+##### C. Limite da evidência
+
+Essa cópia foi obtida de terceiro e sua versão não foi confirmada como a vigente. A interpretação histórica e os pesos da referência permanecem separados; não há confirmação oficial adicional nesta revisão.
+
 ---
 
 ## 12. Entrega
 
 Data limite vigente: **24/10/2026**, conforme comunicação posterior ao desenvolvedor. Prazo original preservado para rastreabilidade: **16/10/2026** (ver seção 1).
 
-- [ ] Confirmar repositório acessível.
-- [ ] Confirmar branch main atualizada.
-- [x] Confirmar README revisado e versionado (`770ec94`); a conferência de integridade documental após os ajustes restantes permanece em TSK-8.5.
-- [ ] Confirmar Swagger funcional.
-- [ ] Confirmar ausência de credenciais.
-- [ ] Confirmar commit final.
+- [x] Confirmar repositório público e acessível em `https://github.com/cleidson21/stockflow-api`.
+- [~] Confirmar branch `main` atualizada: `HEAD` e `origin/main` coincidiam em `081a607` no início desta revisão; a presente alteração ainda não está versionada.
+- [x] Confirmar README revisado e versionado (`770ec94`, `c59b90b`).
+- [x] Confirmar OpenAPI gerável com 12 caminhos e 22 operações no commit `081a607`.
+- [x] Confirmar ausência de `.env`, bancos locais e credenciais reais identificáveis entre os arquivos rastreados; isso não constitui garantia universal contra todo segredo possível.
+- [x] Confirmar migrations `9a91e5d24c23` e `13056bc612e1`, aplicadas pelo CI atual.
+- [x] Confirmar workflow **Tests** aprovado em `081a607`, incluindo `pytest -q` sobre a coleção inalterada de 105 casos.
+- [x] Confirmar integridade do histórico Git e presença de Conventional Commits até `081a607`.
+- [ ] Confirmar commit final incluindo esta consolidação documental.
 - [ ] Enviar link do repositório conforme instruções do desafio.
+
+O CI aprovado não equivale à submissão formal. O envio do link permanece aberto até confirmação expressa do desenvolvedor.
 
 ---
 
