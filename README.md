@@ -207,7 +207,7 @@ A aplicação organiza acesso ao banco, schemas, rotas e segurança nos seguinte
 | **POST** | `/movimentacoes`                          | Efetua movimentação transacional e atualiza o estoque. |
 | **GET**  | `/movimentacoes/{movimentacao_id}`        | Busca uma movimentação pelo ID. |
 
-As consultas, atualizações e o login retornam `200`; a criação de categorias, fornecedores, produtos e movimentações retorna `201`; exclusões bem-sucedidas retornam `204`, sem corpo. Os schemas de entrada e saída estão disponíveis no Swagger UI.
+As consultas, atualizações e o login retornam `200`; a criação de categorias, fornecedores, produtos e movimentações retorna `201`; exclusões bem-sucedidas retornam `204`, sem corpo. Os schemas de entrada e saída estão disponíveis no Swagger UI. As operações de movimentações também documentam os papéis autorizados, regras de estoque, filtros, respostas de erro e exemplos representativos no OpenAPI.
 
 ### Consultas Avançadas em Movimentações
 
@@ -271,7 +271,13 @@ Os handlers padronizam as respostas de erro. Exemplo de conflito de SKU:
 
 ### Logging da aplicação
 
-Exceções inesperadas são registradas por `app.exceptions` com mensagem e traceback. O contexto inclui `event_type`, `http_method`, `route` (padrão da rota) e `exception_type`. Esses campos são passados pelo argumento `extra` do logging, tornando-se atributos do `LogRecord`, e também aparecem explicitamente na mensagem textual. Isso não constitui serialização JSON.
+Movimentações de `ENTRADA` e `SAIDA` confirmadas produzem um evento `INFO` com `event_type="stock_movement_completed"`, emitido somente depois de `commit` e `refresh` bem-sucedidos. Uma `SAIDA` rejeitada por estoque insuficiente produz um evento `WARNING` com `event_type="stock_exit_rejected_insufficient_stock"` antes da resposta HTTP `409`. Esses eventos incluem apenas os identificadores, o tipo e as quantidades pertinentes à operação, sem credenciais.
+
+Exceções inesperadas continuam registradas pelo handler global de `app.exceptions` em nível `ERROR`, com mensagem e traceback. O contexto inclui `event_type`, `http_method`, `route` (padrão da rota) e `exception_type`.
+
+Os metadados operacionais são passados pelo argumento `extra` do logging e tornam-se atributos do `LogRecord`; os dados essenciais também aparecem na mensagem textual. O formato padrão da aplicação permanece textual e não constitui serialização JSON.
+
+Esses registros de logging são observacionais e não substituem o histórico de movimentações persistido no PostgreSQL, que permanece como o registro auditável do domínio.
 
 Quando o logger `app` não encontra handlers próprios ou em ancestrais alcançáveis por propagação, `app/main.py` adiciona um `StreamHandler` com o formato:
 
@@ -287,7 +293,7 @@ O handler da aplicação não acrescenta automaticamente corpos de requisição,
 
 ## Testes automatizados
 
-A suíte possui **101 testes**, aprovados na última execução completa da revisão de qualidade. Há cenários de CRUD, unicidade, movimentações, consultas avançadas, concorrência, erros HTTP, autenticação, RBAC, JWT e verificação de senhas Argon2. Isso não representa uma medição de cobertura de 100% do código.
+A suíte possui **105 testes**. A execução do GitHub Actions para o commit `c450970` foi aprovada com o resultado `105 passed, 12 warnings in 7.82s`. Há cenários de CRUD, unicidade, movimentações, consultas avançadas, concorrência, erros HTTP, autenticação, RBAC, JWT e verificação de senhas Argon2. Os quatro cenários mais recentes verificam o logging de `ENTRADA` concluída, `SAIDA` concluída, `SAIDA` rejeitada por estoque insuficiente e falha controlada no commit. Isso não representa uma medição de cobertura de 100% do código.
 
 Os testes de login verificam o contrato completo de `401` para credenciais inválidas e o `500` genérico para hash não reconhecido, sem token ou detalhes internos na resposta. Os testes JWT incluem claims obrigatórios, `sub` vazio, expiração, assinatura incorreta e algoritmos não permitidos.
 
